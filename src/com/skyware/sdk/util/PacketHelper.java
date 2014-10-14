@@ -525,7 +525,7 @@ public class PacketHelper {
 				json.put(dataName, getDevData().jsonEncoder());
 			}
 					
-			return null;
+			return json;
 		}
 	
 		

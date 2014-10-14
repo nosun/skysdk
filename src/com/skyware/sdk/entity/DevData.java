@@ -57,7 +57,7 @@ public class DevData implements IMCUCoder<JSONArray>, IJsonEncoder{
 			json.put(POWER_NAME, getPower());
 		}
 		
-		return null;
+		return json;
 	}
 
 

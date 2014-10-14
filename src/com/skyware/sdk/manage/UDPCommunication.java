@@ -182,7 +182,7 @@ public class UDPCommunication extends SocketCommunication{
 	 * 关闭广播接收线程
 	 */
 	public void stopReceiverThread(){
-		if(!mReceiverFuture.isDone()){
+		if(mReceiverFuture != null && !mReceiverFuture.isDone()){
 			mBroadcastHandler.stopRunning();
 			mReceiverFuture.cancel(false); //will block
 			mBroadcastHandler = null;
@@ -193,7 +193,7 @@ public class UDPCommunication extends SocketCommunication{
 	 * 关闭广播发送线程
 	 */
 	public void stopBroadcasterThread(){
-		if(!mBroadcasterFuture.isDone()){
+		if(mBroadcasterFuture != null && !mBroadcasterFuture.isDone()){
 			mBroadcasterFuture.cancel(true); 
 			mBroadcastHandler = null;
 		}
