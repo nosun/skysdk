@@ -14,6 +14,26 @@ public interface IBizCallback {
      */
     void onConnectCloudError(ErrorConst errType, String errMsg);
     
+    
+    /**
+	 * 连接设备成功
+	 * 
+	 * @param mac
+	 */
+	void onConnectDeviceSuccess(String mac);
+
+	/**
+	 * 连接设备出错
+	 * 
+	 * @param mac
+	 *            设备mac
+	 * @param errType
+	 *            出错类型
+	 * @param errMsg
+	 *            出错消息
+	 */
+	void onConnectDeviceError(String mac, ErrorConst errType, String errMsg);
+    
     /**
      *	发现新设备的回调
      *

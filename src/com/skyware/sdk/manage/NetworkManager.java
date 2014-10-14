@@ -199,12 +199,12 @@ public class NetworkManager {
 		}
 		
 		@Override
-		public void onConnectDeviceSuccess(String mac) {
-			
+		public void onConnectTCPSuccess(String mac) {
+			 
 		}
 		
 		@Override
-		public void onConnectDeviceError(String mac, ErrorConst errType, String errMsg) {
+		public void onConnectTCPError(String mac, ErrorConst errType, String errMsg) {
 			
 		}
 

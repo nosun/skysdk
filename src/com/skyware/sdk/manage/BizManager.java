@@ -18,6 +18,7 @@ import com.skyware.sdk.entity.DeviceInfo;
 import com.skyware.sdk.packet.InPacket;
 import com.skyware.sdk.packet.OutPacket;
 import com.skyware.sdk.util.PacketHelper;
+import com.skyware.sdk.util.PacketHelper.DevStatus;
 
 public class BizManager {
 
@@ -91,22 +92,15 @@ public class BizManager {
 	 */
 	public void startConnectToDevice(String mac) {
 		Log.e(this.getClass().getSimpleName(), "startConnectToDevice()! mac: " + mac);
-		try {
-			NetworkManager.getInstace().startNewConnect(mac, true);
+//		try {
+		NetworkManager.getInstace().startNewConnect(mac, true);
 			
-			//发送查询指令
-			OutPacket packet = PacketHelper.getDevCheckPacket(NetworkManager.getInstace().getSn());
-//			Log.e(this.getClass().getSimpleName(), "packet: " + new String(packet.getContent(), Charset.forName("US-ASCII")));
-			if (packet != null) {
-				NetworkManager.getInstace().sendPacketToDevice(mac, packet, true);
-			}
-		} catch (UnsupportedEncodingException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (JSONException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+//			//发送查询指令
+//			OutPacket packet = PacketHelper.getDevCheckPacket(NetworkManager.getInstace().getSn());
+////			Log.e(this.getClass().getSimpleName(), "packet: " + new String(packet.getContent(), Charset.forName("US-ASCII")));
+//			if (packet != null) {
+//				NetworkManager.getInstace().sendPacketToDevice(mac, packet, true);
+//			}
 	}
 	
 	/**
@@ -154,6 +148,16 @@ public class BizManager {
 		}
 
 		@Override
+		public void onConnectDeviceSuccess(String mac) {
+			
+		}
+
+		@Override
+		public void onConnectDeviceError(String mac, ErrorConst errType, String errMsg) {
+			
+		}
+		
+		@Override
 		public void onRecvUDPPacket(InPacket packet) {
 			if (mainHandler != null) {
 				String toShow = "";
@@ -182,9 +186,14 @@ public class BizManager {
 		@Override
 		public void onRecvDevStatus(InPacket packet) {
 			if (mainHandler != null) {
-				DeviceInfo deviceInfo = PacketHelper.resolveDevStatPacket(packet);
+				DevStatus devStatus = PacketHelper.resolveDevStatPacket(packet);
 				
-				mainHandler.obtainMessage(SDKConst.MSG_DEVICE_STATUS, deviceInfo).sendToTarget();
+				try {
+					mainHandler.obtainMessage(SDKConst.MSG_DEVICE_STATUS, devStatus.jsonEncoder().toString()).sendToTarget();
+				} catch (JSONException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
 			}	
 		}
 		
@@ -220,6 +229,7 @@ public class BizManager {
 			// TODO Auto-generated method stub
 			
 		}
+
 
 
 	}

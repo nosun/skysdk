@@ -221,7 +221,7 @@ public class TCPCommunication extends SocketCommunication{
 		if (mNetCallback == null)
 			return;
 		if (h instanceof TCPConnector) {
-			mNetCallback.onConnectDeviceSuccess(((TCPConnector) h).getMac());
+			mNetCallback.onConnectTCPSuccess(((TCPConnector) h).getMac());
 		}
 	}
 
@@ -236,7 +236,7 @@ public class TCPCommunication extends SocketCommunication{
 		if (mNetCallback == null)
 			return;
 		if (h instanceof TCPConnector) {
-			mNetCallback.onConnectDeviceError(((TCPConnector) h).getMac(), errType, errMsg);
+			mNetCallback.onConnectTCPError(((TCPConnector) h).getMac(), errType, errMsg);
 		}
 	}
 	

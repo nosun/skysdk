@@ -11,7 +11,10 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import com.skyware.sdk.consts.SocketConst;
+import com.skyware.sdk.entity.DevData;
 import com.skyware.sdk.entity.DeviceInfo;
+import com.skyware.sdk.entity.IJsonDecoder;
+import com.skyware.sdk.entity.IJsonEncoder;
 import com.skyware.sdk.manage.NetworkManager;
 import com.skyware.sdk.packet.InPacket;
 import com.skyware.sdk.packet.OutPacket;
@@ -144,17 +147,13 @@ public class PacketHelper {
 	 *	@param packet
 	 *	@return
 	 */
-	public static DeviceInfo resolveDevStatPacket(InPacket packet) {
+	public static DevStatus resolveDevStatPacket(InPacket packet) {
 		try {
 			JSONObject json = new JSONObject(new String(packet.getContent(), SocketConst.CHARSET_TCP_CONTENT));
 			DevStatus status = new DevStatus();
 			status.jsonDecoder(json);
 			
-			DeviceInfo info = new DeviceInfo();
-			info.setMac(status.getMac());
-			info.resolveData(status.getData());
-			
-			return info;
+			return status;
 		} catch (UnsupportedEncodingException e) {
 			e.printStackTrace();
 		} catch (JSONException e) {
@@ -454,11 +453,12 @@ public class PacketHelper {
 	 * 设备状态上报实体类
 	 * @author wangyf
 	 */
-	public static class DevStatus implements IJsonDecoder{
-		private int sn;
+	public static class DevStatus implements IJsonDecoder, IJsonEncoder{
+		private int sn = -1;
 		private String mac;
-		//private DevData data;	TODO：设备参数实体类
-		private String data[];
+		private DevData devData;	//设备参数实体类
+
+//		private String data[];
 		
 		private final static String snName = "sn";
 		private final static String macName = "mac";
@@ -478,13 +478,14 @@ public class PacketHelper {
 		}
 		public void setMac(String mac) {
 			this.mac = mac;
+		}	
+		public DevData getDevData() {
+			return devData;
 		}
-		public String[] getData() {
-			return data;
+		public void setDevData(DevData devData) {
+			this.devData = devData;
 		}
-		public void setData(String data[]) {
-			this.data = data;
-		}
+		
 		
 		@Override
 		public boolean jsonDecoder(JSONObject json) throws JSONException {
@@ -496,14 +497,38 @@ public class PacketHelper {
 			setMac(json.getString(macName));
 			
 			JSONArray dataArr = json.getJSONArray(dataName);
-			String data[] = new String [dataArr.length()];
-			for (int i = 0; i < dataArr.length(); i++) {
-				data[i] = dataArr.getString(i);
-			}
-			setData(data);
+			DevData data = new DevData();
+			data.mcuDecoder(dataArr);
+			
+			setDevData(data);
+//			info.setMac(status.getMac());
+//			info.resolveData(status.getData());
 			
 			return true;
 		}
+		@Override
+		public JSONObject jsonEncoder() throws JSONException {
+			
+			JSONObject json = new JSONObject();
+			
+			json.put(cmdName, cmdValue);
+
+			if (getSn() != -1) {
+				json.put(snName, getSn());
+			}
+			if (getMac() != null) {
+				json.put(macName, getMac());
+			}
+			
+			if (getDevData() != null) {
+				//转成JSON格式，向上汇报
+				json.put(dataName, getDevData().jsonEncoder());
+			}
+					
+			return null;
+		}
+	
+		
 	}
 	
 	

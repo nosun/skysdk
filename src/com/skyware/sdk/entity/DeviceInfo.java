@@ -7,10 +7,8 @@ public class DeviceInfo {
 //	protected String sn;
 	private String ip;
 	
-	private String power;
+	private DevData data;
 	
-	public static final String POWER_ON = "0";
-	public static final String POWER_OFF = "1";
 	
 	public String getMac() {
 		return mac;
@@ -25,24 +23,15 @@ public class DeviceInfo {
 	public void setIp(String ip) {
 		this.ip = ip;
 	}
-	public String getPower() {
-		return power;
+	
+	public DevData getDevData() {
+		return data;
 	}
-	public void setPower(String power) {
-		this.power = power;
+	public void setDevData(DevData data) {
+		this.data = data;
 	}
+	
+	
 
 	
-	public boolean resolveData(String data[]) {
-		
-		for (String d: data) {
-			if (d.equals("power::0")) {
-				setPower(POWER_ON);
-			} else if (d.equals("power::1")) {
-				setPower(POWER_OFF);
-			}
-		}
-		
-		return false;
-	}
 }

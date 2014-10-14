@@ -293,8 +293,8 @@ public class UDPCommunication extends SocketCommunication{
 				send(PacketHelper.getBroadcastPacket());
 				Thread.sleep(initBroadcastPeriod.get());
 			}
-			receiveLoop(SocketConst.BIO_TIMEOUT_BROADCAST_RECV, 0);
-			
+//			receiveLoop(SocketConst.BIO_TIMEOUT_BROADCAST_RECV, 0);
+			receiveLoop(0, 0);
 			return null;
 		}
 	}

@@ -17,14 +17,14 @@ public interface INetCallback {
 	public void onConnectCloudError(ErrorConst errType, String errMsg);
 
 	/**
-	 * 连接设备成功
+	 * TCP连接成功
 	 * 
 	 * @param mac
 	 */
-	public void onConnectDeviceSuccess(String mac);
+	public void onConnectTCPSuccess(String mac);
 
 	/**
-	 * 连接设备出错
+	 * TCP连接出错
 	 * 
 	 * @param mac
 	 *            设备mac
@@ -33,7 +33,7 @@ public interface INetCallback {
 	 * @param errMsg
 	 *            出错消息
 	 */
-	public void onConnectDeviceError(String mac, ErrorConst errType, String errMsg);
+	public void onConnectTCPError(String mac, ErrorConst errType, String errMsg);
 
 	/**
 	 * 成功接收到TCP包后的回调

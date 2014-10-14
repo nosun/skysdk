@@ -117,12 +117,12 @@ public abstract class UDPBroadcaster extends BIOHandler{
 			//发送
 			mUDPSocket.send(mUDPSendPacket);
 			
-			Log.e(this.getClass().getSimpleName(), "UDP send data lenth:" + mSendMsgSize);
+//			Log.e(this.getClass().getSimpleName(), "UDP send data lenth:" + mSendMsgSize);
 			Log.e(this.getClass().getSimpleName(), "UDP send data content:" + new String(packet.getContent() ,charset));
 			
 			mSocketCallback.onSendFinished(packet);
 			
-			Log.e(this.getClass().getSimpleName(),"UDP already send!");
+//			Log.e(this.getClass().getSimpleName(),"UDP already send!");
 			
 			return true;
 		} catch (Exception e) {

@@ -1,4 +1,4 @@
-package com.skyware.sdk.util;
+package com.skyware.sdk.entity;
 
 import org.json.JSONException;
 import org.json.JSONObject;
