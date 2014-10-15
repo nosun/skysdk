@@ -1,0 +1,306 @@
+package com.skyware.sdk.test.ui;
+
+import java.util.Random;
+
+import android.app.Activity;
+import android.os.Bundle;
+import android.util.Log;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.widget.Button;
+import android.widget.Switch;
+import android.widget.TextView;
+import android.widget.Toast;
+
+import com.skyware.sdk.R;
+import com.skyware.sdk.consts.SocketConst;
+import com.skyware.sdk.entity.DevData;
+import com.skyware.sdk.entity.DeviceInfo;
+import com.skyware.sdk.entity.ErrorInfo;
+import com.skyware.sdk.manage.SkySDK;
+import com.skyware.sdk.util.PacketHelper.DevStatus;
+
+
+public class MainActivity extends Activity {
+	
+	private Button discoverButton;
+	private Button stopButton;
+	private Button onButton1;
+	private Button onButton2;
+	private Button offButton1;
+	private Button offButton2;
+	private Button startButton1;
+	private Button startButton2;
+	private Button stopButton1;
+	private Button stopButton2;
+	private TextView resultTextView;
+	private TextView devTextView1;
+	private TextView devTextView2;
+	private Switch switch1;
+	private Switch switch2;
+	
+	private View layoutDev1;
+	private View layoutDev2;
+	
+	public int getSn() {
+		return new Random().nextInt(SocketConst.SN_MAX);
+	}
+
+	private int deviceCount = 0;
+	
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+//        layoutDev1 = getLayoutInflater().inflate(R.id.layout_dev1,null);
+//        layoutDev2 = getLayoutInflater().inflate(R.id.layout_dev2,null);
+        layoutDev1 = (View) findViewById(R.id.layout_dev1);
+        layoutDev2 = (View) findViewById(R.id.layout_dev2);
+        discoverButton = (Button) findViewById(R.id.btn_discover);
+        stopButton = (Button) findViewById(R.id.btn_stop);
+        resultTextView = (TextView) findViewById(R.id.tv_result);
+        devTextView1 = (TextView) findViewById(R.id.tv_dev1);
+        devTextView2 = (TextView) findViewById(R.id.tv_dev2);
+        onButton1 = (Button) findViewById(R.id.btn_on_1);
+        onButton2 = (Button) findViewById(R.id.btn_on_2);
+        offButton1 = (Button) findViewById(R.id.btn_off_1);
+        offButton2 = (Button) findViewById(R.id.btn_off_2);
+        startButton1 = (Button) findViewById(R.id.btn_start_1);
+        startButton2 = (Button) findViewById(R.id.btn_start_2);
+        stopButton1 = (Button) findViewById(R.id.btn_stop_1);
+        stopButton2 = (Button) findViewById(R.id.btn_stop_2);
+        switch1 = (Switch) findViewById(R.id.switch1);
+        switch2 = (Switch) findViewById(R.id.switch2);
+        
+        discoverButton.setOnClickListener(new OnClickListener() {
+			@Override
+			public void onClick(View v) {
+//				Intent intent = new Intent(MainActivity.this, SDKService.class);
+//				intent.putExtra(EXTRA_CMD, CMD_DISCOVER_START);
+//				startService(intent);
+				SkySDK.startDiscoverDevice();
+			}
+		});
+        
+        stopButton.setOnClickListener(new OnClickListener() {
+			@Override
+			public void onClick(View v) {
+//				Intent intent = new Intent(MainActivity.this, SDKService.class);
+//				intent.putExtra(EXTRA_CMD, CMD_DISCOVER_STOP);
+//				startService(intent);
+				SkySDK.stopDiscoverDevice();
+			}
+		});
+        
+        
+        onButton1.setOnClickListener(new OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				String [] cmd = {"power::0"};
+				SkySDK.sendCmdToDevice((String)devTextView1.getTag(), cmd, getSn());
+			}
+		});
+        
+        onButton2.setOnClickListener(new OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				String [] cmd = {"power::0"};
+				SkySDK.sendCmdToDevice((String)devTextView2.getTag(), cmd, getSn());
+			}
+		});
+
+        offButton1.setOnClickListener(new OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				String [] cmd = {"power::1"};
+				SkySDK.sendCmdToDevice((String)devTextView1.getTag(), cmd, getSn());
+			}
+		});
+        
+        offButton2.setOnClickListener(new OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				String [] cmd = {"power::1"};
+				SkySDK.sendCmdToDevice((String)devTextView2.getTag(), cmd, getSn());
+			}
+		});
+        
+        startButton1.setOnClickListener(new OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				SkySDK.startConnectDevice((String)devTextView1.getTag());
+			}
+		});
+        
+        startButton2.setOnClickListener(new OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				SkySDK.startConnectDevice((String)devTextView2.getTag());
+			}
+		});
+        
+        stopButton1.setOnClickListener(new OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				SkySDK.stopConnectDevice((String)devTextView1.getTag());
+			}
+		});
+        
+        stopButton2.setOnClickListener(new OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				SkySDK.stopConnectDevice((String)devTextView2.getTag());
+			}
+		});
+    }
+    
+    @Override
+    protected void onStop() {
+    	super.onStop();
+    	
+    	SkySDK.stopSDK();
+    	
+    	layoutDev1.setVisibility(View.GONE);
+		layoutDev2.setVisibility(View.GONE);
+		
+		devTextView1.setText("");
+		devTextView2.setText("");
+		
+		switch1.setChecked(false);
+		switch1.setClickable(false);
+    }
+    
+    @Override
+    protected void onStart() {
+    	super.onStart();
+
+        SkySDK.startSDK(getApplication(), new SDKCallback());
+    }
+    
+/*  @Override
+	protected void onNewIntent(Intent intent) {
+		super.onNewIntent(intent);
+		
+		resultTextView.setText(resultTextView.getText() + "\n" 
+				+ intent.getStringExtra(SDKConst.EXTRA_NAME_DISCOVER));
+	}*/
+    
+    private class SDKCallback extends SkySDK.Callback{
+
+    	@Override
+    	@Deprecated
+    	public void onBroadcastReceive(String data) {
+    		resultTextView.setText(resultTextView.getText() + "\n" + data);
+    	}
+    	
+		@Override
+		public void onDiscoverNewDevice(DeviceInfo info) {
+			String devShow = info.getIp() + "   " + info.getMac();
+			deviceCount++;
+			
+			if (deviceCount == 1) {
+				layoutDev1.setVisibility(View.VISIBLE);
+				
+				devTextView1.setText(devShow);
+				devTextView1.setTag(info.getMac());
+				
+				switch1.setChecked(false);
+				switch1.setClickable(false);
+				
+			} else if (deviceCount == 2){
+				layoutDev2.setVisibility(View.VISIBLE);
+				
+				devTextView2.setText(devShow);
+				devTextView2.setTag(info.getMac());
+				
+				switch2.setChecked(false);
+				switch2.setClickable(false);
+			}
+		}
+
+		@Override
+		public void onConnectDeviceResult(String mac, boolean success,
+				ErrorInfo errorInfo) {
+			if (success) {
+				if (mac.equals(devTextView1.getTag())) {
+					startButton1.setEnabled(false);
+					stopButton1.setEnabled(true);
+				} else if (mac.equals(devTextView2.getTag())) {
+					startButton2.setEnabled(false);
+					stopButton2.setEnabled(true);
+				}
+				Toast.makeText(MainActivity.this, "设备MAC:" + mac + "已连接！", Toast.LENGTH_SHORT).show();
+			} else {
+				if (mac.equals(devTextView1.getTag())) {
+					startButton1.setEnabled(true);
+					stopButton1.setEnabled(false);
+				} else if (mac.equals(devTextView2.getTag())) {
+					startButton2.setEnabled(true);
+					stopButton2.setEnabled(false);
+				}
+				Toast.makeText(MainActivity.this, "设备MAC:" + mac + "连接失败！", Toast.LENGTH_SHORT).show();
+			}
+			
+		}
+
+		@Override
+		public void onDeviceDisconnected(String mac, ErrorInfo errorInfo) {
+			if (mac.equals(devTextView1.getTag())) {
+				startButton1.setEnabled(true);
+				stopButton1.setEnabled(false);
+			} else if (mac.equals(devTextView2.getTag())) {
+				startButton2.setEnabled(true);
+				stopButton2.setEnabled(false);
+			}
+			Toast.makeText(MainActivity.this, "设备MAC:" + mac + "已断线！", Toast.LENGTH_SHORT).show();
+		}
+
+		@Override
+		public void onSendDevCmdResult(String mac, int sn, boolean success,
+				ErrorInfo errorInfo) {
+			if (success) {
+				Toast.makeText(MainActivity.this, "发送命令成功, mac: "+ mac + " ,sn:" + sn, 
+						Toast.LENGTH_SHORT).show();
+			} else {
+				Toast.makeText(MainActivity.this, "发送失败", Toast.LENGTH_SHORT).show();
+			}			
+		}
+
+		@Override
+		public void onRecvDevStatus(String json) {
+			Log.e("WYF", json + "");
+		}
+		
+		@Override
+		@Deprecated
+		public void onRecvDevStatusDebug(DevStatus status) {
+			String mac2 = status.getMac();
+			DevData devData = status.getDevData();
+			
+			String power = devData.getPower();
+			if (mac2.equals(devTextView1.getTag())) {
+				if(power != null && power != "")	{
+					if (power == DevData.POWER_ON) {
+						switch1.setChecked(true);
+					} else if (power == DevData.POWER_OFF) {
+						switch1.setChecked(false);
+					}
+				}
+			} else if (mac2.equals(devTextView2.getTag())) {
+				if(power != null && power != "")	{
+					if (power == DevData.POWER_ON) {
+						switch2.setChecked(true);
+					} else if (power == DevData.POWER_OFF) {
+						switch2.setChecked(false);
+					}
+				}
+			}
+		}
+
+
+	
+    	
+    }
+
+    
+}
