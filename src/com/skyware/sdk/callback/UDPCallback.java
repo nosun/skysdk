@@ -5,7 +5,6 @@ import java.io.IOException;
 import java.net.SocketException;
 
 import com.skyware.sdk.consts.ErrorConst;
-import com.skyware.sdk.exception.SocketDisconnectedException;
 import com.skyware.sdk.manage.UDPCommunication;
 import com.skyware.sdk.packet.InPacket;
 import com.skyware.sdk.packet.OutPacket;
@@ -59,10 +58,7 @@ public class UDPCallback implements ISocketCallback{
 		ErrorConst errType = null;
 		//SocketChannel.write()抛出的Execption
 		
-		if (e instanceof SocketDisconnectedException ) {
-			//if this TCP client socket is not yet connected.
-			errType = ErrorConst.ESOCK_BIO_SOCKET_UNCONNECT;
-		} else if (e instanceof EOFException ) {
+		if (e instanceof EOFException ) {
 			//if this stream close but has not framed data remained.
 			errType = ErrorConst.ESOCK_BIO_TCP_NOTFRAME_CLOSE;
 		} else if (e instanceof IOException) {
@@ -85,10 +81,7 @@ public class UDPCallback implements ISocketCallback{
 		ErrorConst errType = null;
 		//SocketChannel.write()抛出的Execption
 		
-		if (e instanceof SocketDisconnectedException ) {
-			//if this TCP client socket is not yet connected.
-			errType = ErrorConst.ESOCK_BIO_SOCKET_UNCONNECT;
-		} else if (e instanceof IOException) {
+		if (e instanceof IOException) {
 			//if another I/O error occurs.
 			errType = ErrorConst.ESOCK_IO_UNKNOWN;
 		} else {

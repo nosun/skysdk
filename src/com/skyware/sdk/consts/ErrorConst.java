@@ -12,7 +12,10 @@ public enum ErrorConst {
 	ESOCK_NIO_INTERRUPT_BY_OTHERTHREAD,		//ClosedByInterruptException
 	ESOCK_NIO_CHANNELCLOSE_OPER_ATTEMPT,	//ClosedChannelException
 	ESOCK_NIO_CHANNEL_UNCONNECT,			//NotYetConnectedException 
-	ESOCK_BIO_SOCKET_UNCONNECT,				//NotYetConnectedException 
+	
+	ESOCK_BIO_CLOSE_BY_REMOTE,
+	ESOCK_BIO_CLOSE_BY_SELF,
+	ESOCK_BIO_CLOSE_BY_HEARTBEAT,
 	ESOCK_BIO_SOCK_OPTIONS,					//SocketException
 	ESOCK_BIO_TCP_NOTFRAME_CLOSE,			//EOFException
 	ESOCK_ARGUMENT_ERROR,					//IllegalArgumentException

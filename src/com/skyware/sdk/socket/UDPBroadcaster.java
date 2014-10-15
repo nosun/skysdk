@@ -10,17 +10,18 @@ import java.util.concurrent.TimeoutException;
 import android.util.Log;
 
 import com.skyware.sdk.callback.ISocketCallback;
-import com.skyware.sdk.consts.SocketConst;
 import com.skyware.sdk.exception.SocketUnstartedException;
+import com.skyware.sdk.manage.BizManager;
 import com.skyware.sdk.packet.InPacket;
 import com.skyware.sdk.packet.OutPacket;
+import com.skyware.sdk.util.NetworkHelper;
 
 public abstract class UDPBroadcaster extends BIOHandler{
 	
 	/** UDP Socket链接 */
 	protected DatagramSocket mUDPSocket;
 	
-	/** 发送UDP Packet */
+	/** 本地绑定的Addr*/
 	protected InetSocketAddress mLocalAddress;
 	
 	/** 发送UDP Packet */
@@ -30,20 +31,14 @@ public abstract class UDPBroadcaster extends BIOHandler{
 	protected DatagramPacket mUDPRecvPacket;
 
 	/**
-	 * 构造函数：指定本地监听端口，建立新的socket连接(使用默认广播地址)
+	 * 构造函数：指定本地监听端口和广播地址：端口，建立新的socket连接
 	 */
 	public UDPBroadcaster(int bindPort, ISocketCallback callback) {
-		this(bindPort, new InetSocketAddress(SocketConst.BROADCAST_ADDR_DEFAULT, SocketConst.REMOTE_PORT_UDP_DEFAULT), callback);
-	}
-	/**
-	 * 构造函数II：指定本地监听端口和广播地址：端口，建立新的socket连接
-	 */
-	public UDPBroadcaster(int bindPort, InetSocketAddress broadcastAddr, ISocketCallback callback) {
 		super();
 		this.mLocalAddress = new InetSocketAddress(bindPort);
 		this.mSocketCallback = callback;
-		// 设置广播地址
-		this.mTargetAddress = broadcastAddr;
+		// 设置当前的广播地址
+		this.mTargetAddress = NetworkHelper.getBroadcastAddress(BizManager.getInstace().getContext());
 	}
 	
 	/**

@@ -14,14 +14,14 @@ public interface INetCallback {
 	 * @param errMsg
 	 *            出错消息
 	 */
-	public void onConnectCloudError(ErrorConst errType, String errMsg);
+	void onConnectCloudError(ErrorConst errType, String errMsg);
 
 	/**
 	 * TCP连接成功
 	 * 
 	 * @param mac
 	 */
-	public void onConnectTCPSuccess(String mac);
+	void onConnectTCPSuccess(String mac);
 
 	/**
 	 * TCP连接出错
@@ -33,7 +33,7 @@ public interface INetCallback {
 	 * @param errMsg
 	 *            出错消息
 	 */
-	public void onConnectTCPError(String mac, ErrorConst errType, String errMsg);
+	void onConnectTCPError(String mac, ErrorConst errType, String errMsg);
 
 	/**
 	 * 成功接收到TCP包后的回调
@@ -41,7 +41,7 @@ public interface INetCallback {
 	 * @param packet
 	 *            接收到的数据包
 	 */
-	public void onReceiveTCP(InPacket packet);
+	void onReceiveTCP(InPacket packet);
 
 	/**
 	 * 成功接收到UDP包后的回调
@@ -49,7 +49,7 @@ public interface INetCallback {
 	 * @param packet
 	 *            接收到的数据包
 	 */
-	public void onReceiveUDP(InPacket packet);
+	void onReceiveUDP(InPacket packet);
 
 	/**
 	 * 接收TCP包错误
@@ -61,7 +61,7 @@ public interface INetCallback {
 	 * @param errMsg
 	 *            出错信息
 	 */
-	public void onReceiveTCPError(String mac, ErrorConst errType, String errMsg);
+	void onReceiveTCPError(String mac, ErrorConst errType, String errMsg);
 
 	/**
 	 * 接收UDP包错误
@@ -71,7 +71,7 @@ public interface INetCallback {
 	 * @param errMsg
 	 *            出错信息
 	 */
-	public void onReceiveUDPError(String mac, ErrorConst errType, String errMsg);
+	void onReceiveUDPError(String mac, ErrorConst errType, String errMsg);
 
 	/**
 	 * 发送包完成
@@ -79,7 +79,7 @@ public interface INetCallback {
 	 * @param packet
 	 *            发送的包
 	 */
-	public void onSendFinished(OutPacket packet);
+	void onSendFinished(OutPacket packet);
 
 	/**
 	 * 发送包错误
@@ -89,6 +89,13 @@ public interface INetCallback {
 	 * @param packet
 	 *            发送的包
 	 */
-	public void onSendError(OutPacket packet, ErrorConst errType, String errMsg);
+	void onSendError(OutPacket packet, ErrorConst errType, String errMsg);
+
+	/**
+	 * TCP连接关闭
+	 * 
+	 * @param mac
+	 */
+	void onCloseTCP(String mac);
 
 }

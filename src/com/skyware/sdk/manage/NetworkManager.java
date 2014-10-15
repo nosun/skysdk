@@ -15,29 +15,28 @@ import com.skyware.sdk.consts.ErrorConst;
 import com.skyware.sdk.consts.SocketConst;
 import com.skyware.sdk.packet.InPacket;
 import com.skyware.sdk.packet.OutPacket;
-import com.skyware.sdk.util.NetworkHelper;
 import com.skyware.sdk.util.PacketHelper;
 import com.skyware.sdk.util.PacketHelper.Broadcast;
 
 public class NetworkManager {
 
-	//饿汉式单例
-	private static NetworkManager mInstance = new NetworkManager();
-	public static NetworkManager getInstace() {
-		return mInstance;
-	}
+//	//饿汉式单例
+//	private static NetworkManager mInstance = new NetworkManager();
+//	public static NetworkManager getInstace() {
+//		return mInstance;
+//	}
 	
-	private NetworkManager() {
+	public NetworkManager(IBizCallback mBizCallback) {
 		Log.e(this.getClass().getSimpleName(), "Construct!");
 		mSn = new AtomicInteger(0);
 		//mBizCallback = BizManager.getInstace().getBizCallback();
-		mNetCallback = new MyNetCallback();
-	}
-	
-	public void setBizCallback(IBizCallback mBizCallback) {
+		
 		this.mBizCallback = mBizCallback;
+		mNetCallback = new MyNetCallback();
+		
+		init();
 	}
-	
+
 	
 	/**	业务层回调 */
 	IBizCallback mBizCallback;
@@ -49,15 +48,6 @@ public class NetworkManager {
 	TCPCommunication mTcpComm;
 	UDPCommunication mUdpComm;
 	
-	/** 广播地址 */
-	InetSocketAddress mBroadcastAddr;
-	
-	public InetSocketAddress getBroadcastAddr() {
-		return mBroadcastAddr;
-	}
-	public void setBroadcastAddr(InetSocketAddress mBroadcastAddr) {
-		this.mBroadcastAddr = mBroadcastAddr;
-	}
 
 	/**	管理自增的SN，作为packet唯一标识 */
     private AtomicInteger mSn;
@@ -66,7 +56,7 @@ public class NetworkManager {
     {
         if (mSn.get() >= SocketConst.SN_MAX)
         {
-        	synchronized (mInstance) {
+        	synchronized (this) {
         		mSn.set(mSn.get() % SocketConst.SN_MAX);
 			}
         }
@@ -98,13 +88,26 @@ public class NetworkManager {
 	/**
 	 *	初始化资源
 	 */
-	public void init(){
+	private void init(){
 		mSendPacketMap = new ConcurrentHashMap<Integer, OutPacket>();
 		mDeviceAddrMap = new ConcurrentHashMap<String, InetSocketAddress>();
 		
-		mBroadcastAddr = NetworkHelper.getBroadcastAddress(BizManager.getInstace().getContext());
 		mTcpComm = new TCPCommunication(mNetCallback);
-		mUdpComm = new UDPCommunication(mNetCallback, mBroadcastAddr);
+		mUdpComm = new UDPCommunication(mNetCallback);
+	}
+	
+	/**
+	 *	释放资源
+	 */
+	public void dispose(){
+		
+		mSendPacketMap = null;
+		mDeviceAddrMap = null;
+		
+		mUdpComm.dispose();
+		mTcpComm.dispose();
+		mTcpComm = null;
+		mUdpComm = null;
 	}
 	
 	/**
@@ -200,17 +203,28 @@ public class NetworkManager {
 		
 		@Override
 		public void onConnectTCPSuccess(String mac) {
-			 
+			if (mBizCallback == null) {
+				return;
+			}
+			
+			mBizCallback.onConnectDeviceSuccess(mac);
 		}
 		
 		@Override
 		public void onConnectTCPError(String mac, ErrorConst errType, String errMsg) {
+			if (mBizCallback == null) {
+				return;
+			}
 			
+			mBizCallback.onConnectDeviceError(mac, errType, errMsg);
 		}
 
 
 		@Override
 		public void onReceiveUDP(InPacket packet) {
+			if (mBizCallback == null) {
+				return;
+			}
 			
 			try {
 				Broadcast.ACK ack = PacketHelper.getBroadcastAck(packet);
@@ -245,6 +259,10 @@ public class NetworkManager {
 		public void onReceiveTCP(InPacket packet) {
 //TODO		解析包，根据类型来决策
 //			findAndDelSourcePacket(packet.getSn());
+			if (mBizCallback == null) {
+				return;
+			}
+			
 			
 			switch(packet.getType()){
 			case TYPE_HEARTBEAT_ACK:
@@ -293,13 +311,20 @@ public class NetworkManager {
 		@Override
 		public void onSendError(OutPacket packet, ErrorConst errType,
 				String errMsg) {
-			// TODO Auto-generated method stub
-			
+			if (mBizCallback == null) {
+				return;
+			}
+			mBizCallback.onSendTCPPacketError(errType, errMsg, packet);
+		}
+
+		@Override
+		public void onCloseTCP(String mac) {
+			if (mBizCallback == null) {
+				return;
+			}
+			mBizCallback.onDeviceDisconnected(mac, ErrorConst.ESOCK_BIO_CLOSE_BY_SELF, "Socket close by remote!");
 		}
 		
 	}
-	
-	
-	
 	
 }

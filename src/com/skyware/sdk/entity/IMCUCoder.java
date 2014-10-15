@@ -1,6 +1,5 @@
 package com.skyware.sdk.entity;
 
-import java.util.Map;
 
 
 /** 

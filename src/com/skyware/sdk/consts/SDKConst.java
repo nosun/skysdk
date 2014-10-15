@@ -2,7 +2,7 @@ package com.skyware.sdk.consts;
 
 public class SDKConst {
 
-	public static final int CMD_DISCOVER_START 	= 0x001;
+/*	public static final int CMD_DISCOVER_START 	= 0x001;
 	public static final int CMD_DISCOVER_STOP 	= 0x002;
 	public static final int CMD_DEVICE_CONTROL 	= 0x101;
 	
@@ -14,7 +14,7 @@ public class SDKConst {
 	public static final int RET_DISCOVER_NEW 			= 0x1012;
 	public static final int RET_DEVICE_CONTROL_OK 	= 0x1101;
 	public static final int RET_DEVICE_CONTROL_ERR 	= 0x1102; 
-	public static final int RET_DEVICE_STATUS_REPORT 	= 0x1111;
+	public static final int RET_DEVICE_STATUS_REPORT 	= 0x1111;*/
 	
 	public static final String EXTRA_CMD = "com.skysdk.cmd";
 	public static final String EXTRA_RET = "com.skysdk.ret";
@@ -26,4 +26,9 @@ public class SDKConst {
 	public static final int MSG_DEVICE_STATUS 		= 0x111;
 	public static final int MSG_DEVICE_CONNECT 		= 0x201;
 	public static final int MSG_DEVICE_DISCONN 		= 0x202;
+	
+	public static final int MSG_DEVICE_STATUS_DEBUG 	= 0x8111;
+	
+	
+	public static final Boolean DEBUG_FLAG = true;
 }

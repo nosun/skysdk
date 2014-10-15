@@ -170,13 +170,26 @@ public abstract class SocketCommunication {
 	 */
 	public abstract boolean isWorking();
 
+	
+	/**
+	 *	释放资源
+	 *
+	 */
+	public void dispose(){
+		mReceiveQueue = null;
+		mSendQueue = null;
+		
+		mSingleExecutor.dispose();
+		mSingleExecutor = null;
+		mPacketSendTask = null;
+		mPacketReportTask = null;
+	}
+	
 	/*
 	 * -----------------------------------------------------------
 	 *
 	 * TODO:这里应该将底层上报的信息做简单处理分析，上报给业务层之间可显示的结论
 	 */
-	
-
 	
 	/** 
 	 * 发送结束回调
@@ -189,10 +202,12 @@ public abstract class SocketCommunication {
 		mNetCallback.onSendFinished(packet);
 	}
 	
-	/** 
-	 * 发送错误回调
-	 * 
-	 * @param packet
+	/**
+	 *	发送错误回调
+	 *
+	 *	@param packet
+	 *	@param errType
+	 *	@param errMsg
 	 */
 	public void onSendError(OutPacket packet, ErrorConst errType, String errMsg) {
 		if (mNetCallback == null)
@@ -207,14 +222,29 @@ public abstract class SocketCommunication {
 	 */
 	abstract public void onReceive(InPacket packet);
 	
-
 	/**
 	 *	接收错误回调
 	 *
-	 *	@param errType	错误类型
-	 *	@param errMsg	错误信息
+	 *	@param h		
+	 *	@param errType
+	 *	@param errMsg
 	 */
 	abstract public void onReceiveError(IOHandler h, ErrorConst errType, String errMsg);
 
+	/**
+	 *	关闭成功回调
+	 *
+	 *	@param h
+	 */
+	abstract public void onCloseFinished(IOHandler h);
+
+	/**
+	 *	关闭错误回调
+	 *
+	 *	@param h
+	 *	@param errType	错误类型
+	 *	@param errMsg	错误信息
+	 */
+	abstract public void onCloseError(IOHandler h, ErrorConst errType, String errMsg);
 
 }

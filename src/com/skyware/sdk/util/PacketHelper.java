@@ -12,10 +12,9 @@ import org.json.JSONObject;
 
 import com.skyware.sdk.consts.SocketConst;
 import com.skyware.sdk.entity.DevData;
-import com.skyware.sdk.entity.DeviceInfo;
 import com.skyware.sdk.entity.IJsonDecoder;
 import com.skyware.sdk.entity.IJsonEncoder;
-import com.skyware.sdk.manage.NetworkManager;
+import com.skyware.sdk.manage.BizManager;
 import com.skyware.sdk.packet.InPacket;
 import com.skyware.sdk.packet.OutPacket;
 import com.skyware.sdk.packet.Packet;
@@ -61,7 +60,7 @@ public class PacketHelper {
 		OutPacket packet = new OutPacket();
 		Broadcast broadcast = new Broadcast();
 		packet.setType(OutPacket.Type.TYPE_BROADCAST);
-		packet.setTargetAddr(NetworkManager.getInstace().getBroadcastAddr());
+		packet.setTargetAddr(NetworkHelper.getBroadcastAddress(BizManager.getInstace().getContext()));
 		packet.setContent(broadcast.toString()
 					.getBytes(SocketConst.CHARSET_BROADCAST_CONTENT));
 		return packet;

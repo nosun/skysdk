@@ -2,7 +2,6 @@ package com.skyware.sdk.manage;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
-import java.net.InetSocketAddress;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -43,19 +42,17 @@ public class UDPCommunication extends SocketCommunication{
 	private ScheduledThreadPoolExecutor mThreadPool;
 	
 	/** WiFi网段下的广播地址 */
-	private InetSocketAddress mBroadcastAddr;
+//	private InetSocketAddress mBroadcastAddr;
 	
-	public UDPCommunication(INetCallback netCallback, InetSocketAddress broadcastAddr) {
+	public UDPCommunication(INetCallback netCallback) {
 		
 		mThreadPool = new ScheduledThreadPoolExecutor(3);	//Start线程、发送线程与接收线程
 		
 		mSocketCallback = new UDPCallback(this);
 		setNetCallback(netCallback);
 		
-		mBroadcastAddr = broadcastAddr;
 		mBroadcastHandler = new BroadcastReceiverTask(
 						SocketConst.LOCAL_PORT_UDP_DEFAULT,
-						mBroadcastAddr,
 						mSocketCallback);
 		try {
 			mBroadcastHandler.start();
@@ -87,7 +84,6 @@ public class UDPCommunication extends SocketCommunication{
 				if (mBroadcastHandler == null || mBroadcastHandler.isStarted() == false) {
 					mBroadcastHandler = new BroadcastReceiverTask(
 							SocketConst.LOCAL_PORT_UDP_DEFAULT,
-							mBroadcastAddr,
 							mSocketCallback);
 					
 					try {
@@ -133,7 +129,6 @@ public class UDPCommunication extends SocketCommunication{
 				if (mBroadcastHandler == null || mBroadcastHandler.isStarted() == false) {
 					mBroadcastHandler = new BroadcastReceiverTask(
 							SocketConst.LOCAL_PORT_UDP_DEFAULT,
-							mBroadcastAddr,
 							mSocketCallback);
 					try {
 						//开启start()线程
@@ -183,8 +178,12 @@ public class UDPCommunication extends SocketCommunication{
 	 */
 	public void stopReceiverThread(){
 		if(mReceiverFuture != null && !mReceiverFuture.isDone()){
-			mBroadcastHandler.stopRunning();
-			mReceiverFuture.cancel(false); //will block
+//			mBroadcastHandler.stopRunning();
+//			mReceiverFuture.cancel(false); //will block
+			if (mBroadcastHandler != null) {
+				mBroadcastHandler.dispose();
+			}
+			mReceiverFuture.cancel(true);
 			mBroadcastHandler = null;
 		}
 	}
@@ -194,6 +193,9 @@ public class UDPCommunication extends SocketCommunication{
 	 */
 	public void stopBroadcasterThread(){
 		if(mBroadcasterFuture != null && !mBroadcasterFuture.isDone()){
+			if (mBroadcastHandler != null) {
+				mBroadcastHandler.dispose();
+			}
 			mBroadcasterFuture.cancel(true); 
 			mBroadcastHandler = null;
 		}
@@ -208,6 +210,23 @@ public class UDPCommunication extends SocketCommunication{
 		}
 		return true;
 	}
+	
+	@Override
+	public void dispose() {
+		super.dispose();
+		
+		mThreadPool.shutdownNow();
+		mThreadPool = null;
+		
+		mSocketCallback = null;
+		setNetCallback(null);
+		
+		stopReceiverThread();
+		stopBroadcasterThread();
+		
+		Log.e(this.getClass().getSimpleName(), "Destroy!");
+	}
+	
 	
 
 	/**
@@ -259,6 +278,19 @@ public class UDPCommunication extends SocketCommunication{
 		
 	}
 	
+	@Override
+	public void onCloseFinished(IOHandler h) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void onCloseError(IOHandler h, ErrorConst errType, String errMsg) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	
 	
 	private class BroadcastReceiverTask extends UDPBroadcaster{
 		
@@ -266,9 +298,8 @@ public class UDPCommunication extends SocketCommunication{
 		
 		private AtomicInteger initBroadcastPeriod; 
 		
-		public BroadcastReceiverTask(int bindPort, InetSocketAddress broadcastAddr,
-				ISocketCallback callback) {
-			super(bindPort, broadcastAddr, callback);
+		public BroadcastReceiverTask(int bindPort, ISocketCallback callback) {
+			super(bindPort, callback);
 			initBroadcastTimes = new AtomicInteger(5);
 			initBroadcastPeriod = new AtomicInteger(100);
 		}
@@ -298,7 +329,5 @@ public class UDPCommunication extends SocketCommunication{
 			return null;
 		}
 	}
-
-
 
 }

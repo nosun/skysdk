@@ -59,7 +59,11 @@ public class TCPCommunication extends SocketCommunication{
 		mThreadPool = new ScheduledThreadPoolExecutor(5);
 		
 		setNetCallback(netCallback);
+		
+		Log.e(this.getClass().getSimpleName(), "Construct!");
 	}
+	
+	
 
 	public IOHandler startNewTCPTask(String mac, InetSocketAddress targetAddr, boolean isPersist) {
 		TCPConnectTask newHandler = new TCPConnectTask(targetAddr, mSocketCallback, mac);
@@ -210,8 +214,36 @@ public class TCPCommunication extends SocketCommunication{
 		return mThreadPool.getActiveCount() > 0;
 	}
 	
+	@Override
+	public void dispose(){
+		super.dispose();
+		
+		mSocketCallback = null;
 
+		for (IOHandler handlerStop : mHandlerPersist.values()) {
+			if (handlerStop != null) {
+				handlerStop.dispose();
+			}
+		}
+		for (IOHandler handlerStop : mHandlerTemp.values()) {
+			if (handlerStop != null) {
+				handlerStop.dispose();
+			}
+		}
+		mHandlerPersist = null;
+		mHandlerTemp = null;
 
+		mThreadPool.shutdownNow();
+		mThreadPool = null;
+		
+		setNetCallback(null);
+		
+		Log.e(this.getClass().getSimpleName(), "Destroy!");
+	}
+
+	
+	
+	
 	/**
 	 * 连接成功回调
 	 * 
@@ -263,10 +295,28 @@ public class TCPCommunication extends SocketCommunication{
 		if (mNetCallback == null)
 			return;
 		if (h instanceof TCPConnector) {
+//			if (errType == ErrorConst.ESOCK_BIO_CLOSE_BY_REMOTE) {
+//				mNetCallback.onReceiveTCPError(((TCPConnector) h).getMac(), errType, errMsg);
+//			} else {
 			mNetCallback.onReceiveTCPError(((TCPConnector) h).getMac(), errType, errMsg);
 		}
 	}
-	
+
+	@Override
+	public void onCloseFinished(IOHandler h) {
+		if (mNetCallback == null)
+			return;
+		if (h instanceof TCPConnector) {
+			mNetCallback.onCloseTCP(((TCPConnector) h).getMac());
+		}
+	}
+
+	@Override
+	public void onCloseError(IOHandler h, ErrorConst errType, String errMsg) {
+		// TODO Auto-generated method stub
+		
+	}
+
 	
 	/**
 	 * TCP连接管理任务
@@ -405,5 +455,6 @@ public class TCPCommunication extends SocketCommunication{
 		}
 		
 	}
+
 
 }

@@ -1,7 +1,5 @@
 package com.skyware.sdk.entity;
 
-import java.util.Map;
-
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;

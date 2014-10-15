@@ -69,7 +69,7 @@ public class TCPCallback implements ISocketCallback {
 
 		if (e instanceof SocketDisconnectedException ) {
 			//if this TCP client socket is not yet connected.
-			errType = ErrorConst.ESOCK_BIO_SOCKET_UNCONNECT;
+			errType = ErrorConst.ESOCK_BIO_CLOSE_BY_REMOTE;
 		} else if (e instanceof EOFException ) {
 			//if this stream close but has not framed data remained.
 			errType = ErrorConst.ESOCK_BIO_TCP_NOTFRAME_CLOSE;
@@ -96,7 +96,7 @@ public class TCPCallback implements ISocketCallback {
 		
 		if (e instanceof SocketDisconnectedException ) {
 			//if this TCP client socket is not yet connected.
-			errType = ErrorConst.ESOCK_BIO_SOCKET_UNCONNECT;
+			errType = ErrorConst.ESOCK_BIO_CLOSE_BY_REMOTE;
 		} else if (e instanceof IOException) {
 			//if another I/O error occurs.
 			errType = ErrorConst.ESOCK_IO_UNKNOWN;
@@ -109,12 +109,13 @@ public class TCPCallback implements ISocketCallback {
 
 	@Override
 	public void onCloseFinished(IOHandler h) {
-		
+		mCommunication.onCloseFinished(h);
 	}
 
 	@Override
 	public void onCloseError(IOHandler h, Exception e) {
-		Log.e(e.getClass().getSimpleName(), e.getLocalizedMessage());		
+		Log.e(e.getClass().getSimpleName(), e.getLocalizedMessage());
+//		mCommunication.onCloseError(h, errType, errMsg);
 	}
 
 }
