@@ -94,6 +94,9 @@ public class NetworkHelper {
 	 * @return
 	 */
 	public static String getBroadcastIpAddress(Context context) {
+		if (context == null) {
+			return null;
+		}
 		WifiManager wifiManager = (WifiManager) context
 				.getSystemService(Context.WIFI_SERVICE);
 		int gatwayVal = wifiManager.getDhcpInfo().gateway;

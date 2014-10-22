@@ -1,5 +1,6 @@
 package com.skyware.sdk.manage;
 
+import java.lang.ref.WeakReference;
 import java.nio.charset.Charset;
 import java.util.HashMap;
 import java.util.Map;
@@ -22,6 +23,7 @@ import com.skyware.sdk.packet.OutPacket;
 import com.skyware.sdk.packet.entity.PacketEntity.DevStatus;
 import com.skyware.sdk.packet.entity.PacketEntity.PacketType;
 import com.skyware.sdk.util.ConvertUtil;
+import com.skyware.sdk.util.NetworkHelper;
 
 public class BizManager {
 
@@ -41,10 +43,10 @@ public class BizManager {
 	}
 	
 	/** Application */
-	private Context mContext;
+	private WeakReference<Context> mContext;
 	
 	public Context getContext() {
-		return mContext;
+		return mContext.get();
 	}
 	
 	private Map<Long, DeviceInfo> mDeviceMap;
@@ -57,7 +59,7 @@ public class BizManager {
 	 *	@param context	application
 	 */
 	public void init(Context context) {
-		this.mContext = context;
+		this.mContext = new WeakReference<Context>(context);
 		
 		mDeviceMap = new ConcurrentHashMap<Long, DeviceInfo>();
 		
@@ -70,12 +72,13 @@ public class BizManager {
 	 *	@param context	application
 	 */
 	public void finallize() {
-		mContext = null;
 		mUIHandler = null;
 		
 		mDeviceMap = null;
 		mNetworkManager.finallize();
 		mNetworkManager = null;
+		
+		mContext = null;
 	}
 	
 	/**
@@ -83,7 +86,9 @@ public class BizManager {
 	 */
 	public void startDiscoveryDevice() {
 		Log.e(this.getClass().getSimpleName(), "startDiscoveryDevice()!");
-		mNetworkManager.startBroadcaster();
+		if (NetworkHelper.isWifiConnected(getContext())) {
+			mNetworkManager.startBroadcaster();
+		}
 	}
 	
 	/**
@@ -91,7 +96,9 @@ public class BizManager {
 	 */
 	public void stopDiscoveryDevice() {
 		Log.e(this.getClass().getSimpleName(), "stopDiscoveryDevice()!");
-		mNetworkManager.stopBroadcaster();
+		if (NetworkHelper.isWifiConnected(getContext())) {
+			mNetworkManager.stopBroadcaster();
+		}
 	}
 
 	
@@ -102,8 +109,9 @@ public class BizManager {
 	public void startConnectToDevice(long mac) {
 		Log.e(this.getClass().getSimpleName(), "startConnectToDevice()! mac: " + mac);
 //		try {
-		mNetworkManager.startNewConnect(mac, true);
-			
+		if (NetworkHelper.isWifiConnected(getContext())) {
+			mNetworkManager.startNewConnect(mac, true);
+		}
 //			//发送查询指令
 //			OutPacket packet = PacketHelper.getDevCheckPacket(mNetworkManager.getSn());
 ////			Log.e(this.getClass().getSimpleName(), "packet: " + new String(packet.getContent(), Charset.forName("US-ASCII")));
@@ -119,7 +127,9 @@ public class BizManager {
 	public void stopConnectToDevice(long mac) {
 		Log.e(this.getClass().getSimpleName(), "stopConnectToDevice()! mac: " + mac);
 		
-		mNetworkManager.stopConnect(mac);
+		if (NetworkHelper.isWifiConnected(getContext())) {
+			mNetworkManager.stopConnect(mac);
+		}
 	}
 	
 	
@@ -129,27 +139,32 @@ public class BizManager {
 	public void sendCmdToDevice(long mac, CmdInfo cmd, int sn) {
 		Log.e(this.getClass().getSimpleName(), "sendCmdToDevice()! mac: " + mac + ",cmd: " + cmd + ",sn: " + sn);
 		
-		mNetworkManager.sendPacketToDevice(mac, PacketType.DEVCOMMAND, cmd, sn, true);
+		if (NetworkHelper.isWifiConnected(getContext())) {
+			mNetworkManager.sendPacketToDevice(mac, PacketType.DEVCOMMAND, cmd, sn, true);
+		} else {
+			//否则走大循环
+		}
 	}
 	
 	
 	
+	/**
+	 *	业务层回调
+	 *
+	 *	@author wangyf 2014-9-22
+	 */
 	private class MyBizCallback implements IBizCallback{
-
-
 		@Override
 		public void onConnectCloudError(ErrorConst errType, String errMsg) {
 			// TODO Auto-generated method stub
 			
 		}
-
 		@Override
 		public void onConnectDeviceSuccess(long deviceMac) {
 			if (mUIHandler != null) {
 				mUIHandler.obtainMessage(SDKConst.MSG_DEVICE_CONNECT, 1, -1, deviceMac).sendToTarget();
 			}
 		}
-
 		@Override
 		public void onConnectDeviceError(long deviceMac, ErrorConst errType, String errMsg) {
 			if (mUIHandler != null) {
@@ -163,7 +178,6 @@ public class BizManager {
 				mUIHandler.obtainMessage(SDKConst.MSG_DEVICE_CONNECT, 0, -1, map).sendToTarget();
 			}
 		}
-		
 		@Override
 		public void onDeviceDisconnected(long deviceMac, ErrorConst errType, String errMsg) {
 			if (mUIHandler != null) {
@@ -177,7 +191,6 @@ public class BizManager {
 				mUIHandler.obtainMessage(SDKConst.MSG_DEVICE_DISCONN, map).sendToTarget();
 			}
 		}
-		
 		@Override
 		public void onRecvUDPPacket(InPacket packet) {
 			if (mUIHandler != null) {
@@ -187,7 +200,6 @@ public class BizManager {
 				mUIHandler.obtainMessage(SDKConst.MSG_BROADCAST_RECEIVE, toShow).sendToTarget();
 			}
 		}
-
 		@Override
 		public void onDiscoverNewDevice(long deviceMac, String deviceIp) {
 			if (mUIHandler != null) {
@@ -203,8 +215,6 @@ public class BizManager {
 				mUIHandler.obtainMessage(SDKConst.MSG_DISCOVER_FIND_NEW, deviceInfo).sendToTarget();
 			}	
 		}
-
-
 		@Override
 		public void onRecvDevStatus(DevStatus devStatus) {
 			if (mUIHandler != null) {
@@ -221,18 +231,15 @@ public class BizManager {
 				}
 			}	
 		}
-		
 		@Override
 		public void onRecvTCPPacket(InPacket packet) {
 			
 		}
-
 		@Override
 		public void onRecvError(ErrorConst errType, String errMsg) {
 			// TODO Auto-generated method stub
 			
 		}
-
 		@Override
 		public void onSendTCPPacketSuccess(OutPacket packet) {
 			if (mUIHandler != null) {
@@ -241,7 +248,6 @@ public class BizManager {
 				}
 			}
 		}
-
 		@Override
 		public void onSendTCPPacketError(ErrorConst errType, String errMsg,
 				OutPacket packet) {
@@ -259,11 +265,11 @@ public class BizManager {
 				}
 			}
 		}
-
 		@Override
 		public void onSDKError(ErrorConst errType, String errMsg) {
 			// TODO Auto-generated method stub
 			
 		}
 	}
+	
 }

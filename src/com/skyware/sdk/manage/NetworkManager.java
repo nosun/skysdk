@@ -5,6 +5,14 @@ import java.net.InetSocketAddress;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
+import android.net.NetworkInfo;
+import android.net.NetworkInfo.State;
+import android.net.wifi.WifiManager;
+import android.os.Parcelable;
 import android.util.Log;
 
 import com.skyware.sdk.callback.IBizCallback;
@@ -39,6 +47,8 @@ public class NetworkManager {
 		init();
 	}
 
+	/** android 网络状态变化监听 */
+	BroadcastReceiver mNetworkChangeReceiver;
 	
 	/**	业务层回调 */
 	IBizCallback mBizCallback;
@@ -83,11 +93,14 @@ public class NetworkManager {
 		return packet;
 	}
 	
-	/** 设备地址映射表 Mac-IpAddr */
+	/** 现有可访问设备的地址映射表 Mac-IpAddr */
 	private ConcurrentHashMap<Long, InetAddress> mDeviceAddrMap;
 	
-	/** 设备协议（厂家）类型映射表 Mac-ProtocolType */
+	/** 现有可访问设备的协议（厂家）类型映射表 Mac-ProtocolType */
 	private ConcurrentHashMap<Long, Integer> mDeviceProtocolMap;
+	
+	
+	
 	
 	/**
 	 *	初始化资源
@@ -99,6 +112,8 @@ public class NetworkManager {
 		
 		mTcpComm = new TCPCommunication(mNetCallback);
 		mUdpComm = new UDPCommunication(mNetCallback);
+		
+		registNetworkReceiver();
 	}
 	
 	/**
@@ -113,6 +128,8 @@ public class NetworkManager {
 		mTcpComm.finallize();
 		mTcpComm = null;
 		mUdpComm = null;
+		
+		unregistNetworkReceiver();
 	}
 	
 	/**
@@ -175,6 +192,16 @@ public class NetworkManager {
 		return false;
 	}
 
+	/**
+	 *	断开所有已有连接
+	 *
+	 *	@param deviceMac
+	 *	@return
+	 */
+	public boolean stopAllConnects() {
+		return mTcpComm.stopAllTCPTask();
+	}
+	
 	/**
 	 *	向设备发送报文（TCP）
 	 *
@@ -287,6 +314,11 @@ public class NetworkManager {
 	}
 	
 	
+	/**
+	 *	网络层回调
+	 *
+	 *	@author wangyf 2014-9-22
+	 */
 	private class MyNetCallback implements INetCallback{
 
 		@Override
@@ -434,4 +466,77 @@ public class NetworkManager {
 		
 	}
 	
+	
+	private void registNetworkReceiver(){
+		 IntentFilter filter = new IntentFilter();
+		 filter.addAction(WifiManager.NETWORK_STATE_CHANGED_ACTION);
+//		 filter.addAction(WifiManager.WIFI_STATE_CHANGED_ACTION);
+//		 filter.addAction(ConnectivityManager.CONNECTIVITY_ACTION);
+		 Context context = BizManager.getInstace().getContext();
+		 if (context != null) {
+			 mNetworkChangeReceiver = new NetworkConnectChangedReceiver();
+			 context.registerReceiver(mNetworkChangeReceiver, filter);
+		 }
+	}
+
+	private void unregistNetworkReceiver(){
+		 Context context = BizManager.getInstace().getContext();
+		 if (context != null) {
+			 context.unregisterReceiver(mNetworkChangeReceiver);
+		 }
+	}
+	
+	public class NetworkConnectChangedReceiver extends BroadcastReceiver {  
+	    @Override  
+	    public void onReceive(Context context, Intent intent) {  
+/*	        if (WifiManager.WIFI_STATE_CHANGED_ACTION.equals(intent.getAction())) {// 这个监听wifi的打开与关闭，与wifi的连接无关  
+	           
+	        	int wifiState = intent.getIntExtra(WifiManager.EXTRA_WIFI_STATE, 0);  
+	            
+	            switch (wifiState) {  
+	            case WifiManager.WIFI_STATE_DISABLED:  
+	            	Log.e("WYF", "wifiState: " + "WIFI_STATE_DISABLED");  
+	                break;  
+	            case WifiManager.WIFI_STATE_DISABLING:  
+	            	Log.e("WYF", "wifiState: " + "WIFI_STATE_DISABLING");  
+	            	break;
+	            case WifiManager.WIFI_STATE_ENABLED:
+	            	Log.e("WYF", "wifiState: " + "WIFI_STATE_ENABLED");  
+	                break;  
+	            case WifiManager.WIFI_STATE_ENABLING:
+	            	Log.e("WYF", "wifiState: " + "WIFI_STATE_ENABLING");  
+	                break;  
+	            //  
+	            }  
+	        } */ 
+	
+	        // 这个监听wifi的连接状态即是否连上了一个有效无线路由，当上边广播的状态是WifiManager.WIFI_STATE_DISABLING，和WIFI_STATE_DISABLED的时候，根本不会接到这个广播。  
+	        // 在上边广播接到广播是WifiManager.WIFI_STATE_ENABLED状态的同时也会接到这个广播，当然刚打开wifi肯定还没有连接到有效的无线  
+	        if (WifiManager.NETWORK_STATE_CHANGED_ACTION.equals(intent.getAction())) {  
+	            Parcelable parcelableExtra = intent  
+	                    .getParcelableExtra(WifiManager.EXTRA_NETWORK_INFO);  
+	            if (null != parcelableExtra) {  
+	                NetworkInfo networkInfo = (NetworkInfo) parcelableExtra;  
+	                State state = networkInfo.getState();  
+//	                DetailedState state2 = networkInfo.getDetailedState();  
+//	                Log.e("WYF", "connect state: " + state);   
+	                switch (state){
+	                case CONNECTED:
+	                	startBroadcaster();
+	                	
+	                	break;
+	                case DISCONNECTED:
+	                	stopBroadcaster();
+	                	stopAllConnects();
+	                	
+	                	break;
+					default:
+						break;
+	                }
+
+	            }  
+	        }  
+	        
+	    }
+	}
 }

@@ -112,6 +112,13 @@ public class SkySDK {
 		public abstract void onDiscoverNewDevice(DeviceInfo info);
 
 		/**
+		 *	设备离开网段
+		 *
+		 *	@param info		设备信息类
+		 */
+		public abstract void onDeviceDismiss(String mac);
+		
+		/**
 		 *	与设备建立长连接成功
 		 *
 		 *	@param mac			目标设备mac

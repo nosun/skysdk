@@ -64,9 +64,6 @@ public class TCPCommunication extends SocketCommunication{
 	}
 	
 	
-
-	
-	
 	public IOHandler startNewTCPTask(long mac, InetSocketAddress targetAddr, boolean isPersist) {
 		TCPConnectTask newHandler = new TCPConnectTask(targetAddr, mSocketCallback, mac);
 		
@@ -85,28 +82,46 @@ public class TCPCommunication extends SocketCommunication{
 	
 	
 	public boolean stopTCPTask(long mac) {
-		TCPConnectTask handlerStop = (TCPConnectTask) mHandlerTemp.get(mac);
+		IOHandler handlerStop =  mHandlerTemp.get(mac);
 		if (handlerStop == null) {
-			handlerStop = (TCPConnectTask) mHandlerPersist.get(mac);
+			handlerStop =  mHandlerPersist.get(mac);
 		}
-		
 		if (handlerStop == null) {
 			return false;
 		}
-		
-		Future<Object> future = handlerStop.getFuture();
+		if (handlerStop instanceof TCPConnectTask) {
+			return stopTCPConnectTask((TCPConnectTask)handlerStop);
+		}
+		return false;
+	}
+	
+	public boolean stopAllTCPTask() {
+		boolean b1 = false, b2 = false;
+		for (IOHandler handlerStop : mHandlerPersist.values()) {
+			if (handlerStop != null && handlerStop instanceof TCPConnectTask) {
+				b1 = stopTCPConnectTask((TCPConnectTask)handlerStop);
+			}
+		}
+		for (IOHandler handlerStop : mHandlerTemp.values()) {
+			if (handlerStop != null && handlerStop instanceof TCPConnectTask) {
+				b2 = stopTCPConnectTask((TCPConnectTask)handlerStop);
+			}
+		}
+		return b1 && b2;
+	}
+
+	private boolean stopTCPConnectTask(TCPConnectTask task) {
+		Future<Object> future = task.getFuture();
 		
 		if (future == null || future.isDone() || future.isCancelled()) {
-			handlerStop.dispose();
+			task.dispose();
 			return false;
 		} else {
 			boolean b1 = future.cancel(true);
-			boolean b2 = handlerStop.dispose();
+			boolean b2 = task.dispose();
 			return b1 && b2;
 		}
 	}
-	
-
 	
 	@Override
 	public void sendPacketSync(OutPacket packet){
@@ -226,16 +241,7 @@ public class TCPCommunication extends SocketCommunication{
 	public void finallize(){
 		super.finallize();
 	
-		for (IOHandler handlerStop : mHandlerPersist.values()) {
-			if (handlerStop != null) {
-				handlerStop.dispose();
-			}
-		}
-		for (IOHandler handlerStop : mHandlerTemp.values()) {
-			if (handlerStop != null) {
-				handlerStop.dispose();
-			}
-		}
+		stopAllTCPTask();
 		
 		mHandlerPersist = null;
 		mHandlerTemp = null;
@@ -250,9 +256,10 @@ public class TCPCommunication extends SocketCommunication{
 	}
 
 	
-	
-	
 	/**
+	 *	============================================
+	 * 
+	 * 
 	 * 连接成功回调
 	 * 
 	 * @param h
