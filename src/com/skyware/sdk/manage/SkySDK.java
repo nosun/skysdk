@@ -8,9 +8,11 @@ import android.os.Handler;
 import android.os.Message;
 
 import com.skyware.sdk.consts.SDKConst;
+import com.skyware.sdk.entity.CmdInfo;
 import com.skyware.sdk.entity.DeviceInfo;
 import com.skyware.sdk.entity.ErrorInfo;
-import com.skyware.sdk.util.PacketHelper.DevStatus;
+import com.skyware.sdk.packet.entity.LierdaPacketEntity.DevStatus;
+import com.skyware.sdk.util.ConvertUtil;
 
 public class SkySDK {
 	
@@ -36,7 +38,7 @@ public class SkySDK {
 	public static void stopSDK() {
 		mCallback = null;
 		
-		BizManager.getInstace().dispose();
+		BizManager.getInstace().finallize();
 	}
 	
 	/**
@@ -59,7 +61,12 @@ public class SkySDK {
 	 *	@param mac
 	 */
 	public static void startConnectDevice(String mac) {
-		BizManager.getInstace().startConnectToDevice(mac);
+		long macLong = -1;
+		if ((macLong = ConvertUtil.macString2Long(mac)) == -1) {
+			throw new IllegalArgumentException("Mac string is illegal!");
+		}
+		
+		BizManager.getInstace().startConnectToDevice(macLong);
 	}
 	
 	/**
@@ -68,7 +75,12 @@ public class SkySDK {
 	 *	@param mac
 	 */
 	public static void stopConnectDevice(String mac) {
-		BizManager.getInstace().stopConnectToDevice(mac);
+		long macLong = -1;
+		if ((macLong = ConvertUtil.macString2Long(mac)) == -1) {
+			throw new IllegalArgumentException("Mac string is illegal!");
+		}
+		
+		BizManager.getInstace().stopConnectToDevice(macLong);
 	}
 	
 	/**
@@ -77,8 +89,13 @@ public class SkySDK {
 	 *	@param mac		
 	 *	@param cmd		指令列表，如 power::0 的字符串格式 
 	 */
-	public static void sendCmdToDevice(String mac, String[] cmd, int sn) {	//TODO CMD_INFO or Json
-		BizManager.getInstace().sendCmdToDevice(mac, cmd, sn);
+	public static void sendCmdToDevice(String mac, CmdInfo cmd, int sn) {	//TODO CMD_INFO or Json
+		long macLong = -1;
+		if ((macLong = ConvertUtil.macString2Long(mac)) == -1) {
+			throw new IllegalArgumentException("Mac string is illegal!");
+		}
+		
+		BizManager.getInstace().sendCmdToDevice(macLong, cmd, sn);
 	}
 	
 	
@@ -166,10 +183,10 @@ public class SkySDK {
 				
 				if(msg.obj instanceof HashMap<?, ?>){
 					map = (HashMap<String, Object>)msg.obj;
-					mac = (String) map.get("KEY_MAC");
+					mac = ConvertUtil.macLong2String((Long)map.get("KEY_MAC"));
 					errorInfo = (ErrorInfo) map.get("KEY_ERR");
-				} else if (msg.obj instanceof String) {
-					mac = (String) msg.obj;
+				} else if (msg.obj instanceof Long) {
+					mac = ConvertUtil.macLong2String((Long)msg.obj);
 				}
 				
 				success = msg.arg1 == 1? true : false;
@@ -184,7 +201,7 @@ public class SkySDK {
 				
 			case SDKConst.MSG_DEVICE_DISCONN:		//设备断线
 				map = (HashMap<String, Object>)msg.obj;
-				mac = (String) map.get("KEY_MAC");
+				mac = ConvertUtil.macLong2String((Long)map.get("KEY_MAC"));
 				errorInfo = (ErrorInfo) map.get("KEY_ERR");
 				
 				if (mCallback != null) {
@@ -198,10 +215,10 @@ public class SkySDK {
 				
 				if(msg.obj instanceof HashMap<?, ?>){
 					map = (HashMap<String, Object>)msg.obj;
-					mac = (String) map.get("KEY_MAC");
+					mac = ConvertUtil.macLong2String((Long)map.get("KEY_MAC"));
 					errorInfo = (ErrorInfo) map.get("KEY_ERR");
-				} else if (msg.obj instanceof String) {
-					mac = (String) msg.obj;
+				} else if (msg.obj instanceof Long) {
+					mac = ConvertUtil.macLong2String((Long)msg.obj);
 				}
 
 				if (mCallback != null) {

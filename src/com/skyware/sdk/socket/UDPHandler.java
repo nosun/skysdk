@@ -1,22 +1,20 @@
 package com.skyware.sdk.socket;
 
+import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetSocketAddress;
 import java.net.SocketException;
-import java.util.concurrent.TimeoutException;
 
 import android.util.Log;
 
 import com.skyware.sdk.callback.ISocketCallback;
-import com.skyware.sdk.exception.SocketUnstartedException;
-import com.skyware.sdk.manage.BizManager;
+import com.skyware.sdk.exception.SkySocketUnstartedException;
 import com.skyware.sdk.packet.InPacket;
 import com.skyware.sdk.packet.OutPacket;
-import com.skyware.sdk.util.NetworkHelper;
 
-public abstract class UDPBroadcaster extends BIOHandler{
+public abstract class UDPHandler extends BIOHandler{
 	
 	/** UDP Socket链接 */
 	protected DatagramSocket mUDPSocket;
@@ -33,12 +31,10 @@ public abstract class UDPBroadcaster extends BIOHandler{
 	/**
 	 * 构造函数：指定本地监听端口和广播地址：端口，建立新的socket连接
 	 */
-	public UDPBroadcaster(int bindPort, ISocketCallback callback) {
+	public UDPHandler(int bindPort, ISocketCallback callback) {
 		super();
 		this.mLocalAddress = new InetSocketAddress(bindPort);
 		this.mSocketCallback = callback;
-		// 设置当前的广播地址
-		this.mTargetAddress = NetworkHelper.getBroadcastAddress(BizManager.getInstace().getContext());
 	}
 	
 	/**
@@ -98,17 +94,13 @@ public abstract class UDPBroadcaster extends BIOHandler{
 	public boolean send(OutPacket packet) {
 		try {
 			if (!isStarted()) {
-				throw new SocketUnstartedException("UDP broadcast socket didn't start yet!");
+				throw new SkySocketUnstartedException("UDP broadcast socket didn't start yet!");
 			}
 			mSendMsgSize = packet.getContent().length;
 			System.arraycopy(packet.getContent(), 0, mSendBuf, 0, mSendMsgSize);
 			
-			//NOTICE: 此处采用动态生成的广播地址，因为wifi环境会经常变化
-			if (packet.getTargetAddr() != null) {
-				mTargetAddress = (InetSocketAddress) packet.getTargetAddr();
-			}
 			//包装UDP发送报文
-			mUDPSendPacket = new DatagramPacket(mSendBuf, mSendMsgSize, mTargetAddress);
+			mUDPSendPacket = new DatagramPacket(mSendBuf, mSendMsgSize, packet.getTargetAddr());
 			//发送
 			mUDPSocket.send(mUDPSendPacket);
 			
@@ -132,10 +124,10 @@ public abstract class UDPBroadcaster extends BIOHandler{
 	 * 接收UDP包（阻塞，可设置timeout）
 	 */
 	@Override
-	public boolean receive(int readTimeout) throws TimeoutException {
+	public boolean receive(int readTimeout) throws IOException {
 		try {
 			if (!isStarted()) {
-				throw new SocketUnstartedException("UDP broadcast socket didn't start yet!");
+				throw new SkySocketUnstartedException("UDP broadcast socket didn't start yet!");
 			}
 			if (getReadTimeout() != readTimeout) {
 				setReadTimeout(readTimeout);
@@ -149,7 +141,7 @@ public abstract class UDPBroadcaster extends BIOHandler{
 			//封装InPacket
 			InPacket packet = new InPacket();
 			packet.setReceiveTime(System.currentTimeMillis());
-			packet.setSourceAddr(mUDPRecvPacket.getSocketAddress());
+			packet.setSourceAddr((InetSocketAddress) mUDPRecvPacket.getSocketAddress());
 			
 			byte[] content = new byte[mRecvMsgSize];
 			System.arraycopy(mUDPRecvPacket.getData(), 0, content, 0, mRecvMsgSize);
@@ -161,12 +153,12 @@ public abstract class UDPBroadcaster extends BIOHandler{
 			mSocketCallback.onReceive(packet);
 //			reset();		
 			return true;
-		} catch (SocketUnstartedException e){
+		} catch (SkySocketUnstartedException e){
 			mSocketCallback.onReceiveError(this, e);
 			throw e;
 		} catch (InterruptedIOException e){
 			mSocketCallback.onReceiveError(this, e);
-			throw new TimeoutException("UDP read() is timeout");
+			throw e;
 		} catch (Exception e) {
 			e.printStackTrace();		
 			mSocketCallback.onReceiveError(this, e);
@@ -190,15 +182,16 @@ public abstract class UDPBroadcaster extends BIOHandler{
 				
 			try {
 				receive(readTimeout);  //IO READ	
-			} catch (SocketUnstartedException e) {
+			} catch (SkySocketUnstartedException e) {
 				e.printStackTrace();
 				// TODO: 可以考虑重建连接
 				
 				isExit.set(true); //如果socket未开启，则退出循环
-			} catch (TimeoutException e) {
+			} catch (InterruptedIOException e) {
 				e.printStackTrace();
 				// TODO: 阻塞读超时，在这里计时，如果次数过多结束线程
-				
+			} catch (IOException e) {
+				e.printStackTrace();
 			} finally {	
 				// 检测时间差，如果循环超时，则退出循环
 				if(loopTimeout != 0){

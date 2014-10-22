@@ -175,7 +175,7 @@ public abstract class SocketCommunication {
 	 *	释放资源
 	 *
 	 */
-	public void dispose(){
+	public void finallize(){
 		mReceiveQueue = null;
 		mSendQueue = null;
 		
@@ -246,5 +246,6 @@ public abstract class SocketCommunication {
 	 *	@param errMsg	错误信息
 	 */
 	abstract public void onCloseError(IOHandler h, ErrorConst errType, String errMsg);
+
 
 }

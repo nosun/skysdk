@@ -4,11 +4,9 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 /** 
- * @Description Json编码接口
+ * Json编码接口
  * @author wyf (zgtjwyftc@gmail.com)
  * @date 2014-8-25 上午10:24:09 
- *  
- * @Tips 
  */
 public interface IJsonEncoder {
 	

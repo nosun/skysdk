@@ -1,7 +1,9 @@
 package com.skyware.sdk.manage;
 
+import static com.skyware.sdk.consts.SocketConst.*;
+
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
+import java.net.InetSocketAddress;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -17,17 +19,17 @@ import com.skyware.sdk.callback.INetCallback;
 import com.skyware.sdk.callback.ISocketCallback;
 import com.skyware.sdk.callback.UDPCallback;
 import com.skyware.sdk.consts.ErrorConst;
-import com.skyware.sdk.consts.SocketConst;
+import com.skyware.sdk.consts.SDKConst;
 import com.skyware.sdk.packet.InPacket;
 import com.skyware.sdk.packet.OutPacket;
 import com.skyware.sdk.socket.IOHandler;
-import com.skyware.sdk.socket.UDPBroadcaster;
+import com.skyware.sdk.socket.UDPHandler;
 import com.skyware.sdk.util.PacketHelper;
 
 public class UDPCommunication extends SocketCommunication{
 
 	/**	负责广播的IOHandler */
-	private IOHandler mBroadcastHandler;
+	private IOHandler mUDPHandler;
 	
 	/**	Start线程的Future */
 	private Future<Object> mStartFuture;
@@ -45,17 +47,16 @@ public class UDPCommunication extends SocketCommunication{
 //	private InetSocketAddress mBroadcastAddr;
 	
 	public UDPCommunication(INetCallback netCallback) {
-		
+
 		mThreadPool = new ScheduledThreadPoolExecutor(3);	//Start线程、发送线程与接收线程
 		
 		mSocketCallback = new UDPCallback(this);
 		setNetCallback(netCallback);
 		
-		mBroadcastHandler = new BroadcastReceiverTask(
-						SocketConst.LOCAL_PORT_UDP_DEFAULT,
-						mSocketCallback);
+		mUDPHandler = new UDPTask(mSocketCallback);
+		
 		try {
-			mBroadcastHandler.start();
+			mUDPHandler.start();	
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -63,53 +64,51 @@ public class UDPCommunication extends SocketCommunication{
 		Log.e(this.getClass().getSimpleName(), "Construct!");
 	}
 
+	
+	
 	@Override
 	public void sendPacketSync(OutPacket packet){
-		if (mBroadcastHandler.isStarted()) {
-			mBroadcastHandler.send(packet);
+		if (mUDPHandler.isStarted()) {
+			try {
+				mUDPHandler.send(packet);
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
 		}
 	}
 	
-	
-	
+
+	public boolean startNewUdpKeepAlive(long deviceMac,
+			InetSocketAddress targetAddr) {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	public boolean stopUdpKeepAlive(long deviceMac) {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+
 	
 	/**
 	 * 开启广播接收线程
 	 */
 	public boolean startReceiverThread(){
-		if (mReceiverFuture != null) {		//第二次开启
-			if (!mReceiverFuture.isDone()) {	//线程未关闭
-				return false;
-			} else {	//线程已关闭，需重新生成Handler
-				if (mBroadcastHandler == null || mBroadcastHandler.isStarted() == false) {
-					mBroadcastHandler = new BroadcastReceiverTask(
-							SocketConst.LOCAL_PORT_UDP_DEFAULT,
-							mSocketCallback);
-					
-					try {
-						//开启start()线程
-						mBroadcastHandler.start();
-						//等待start完成
-						mStartFuture.get(SocketConst.BIO_TIMEOUT_UDP_START, TimeUnit.MILLISECONDS);
-					} catch (InterruptedException e) {
-						e.printStackTrace();
-						mSocketCallback.onStartError(mBroadcastHandler, e);
-					} catch (ExecutionException e) {
-						e.printStackTrace();
-						mSocketCallback.onStartError(mBroadcastHandler, new Exception(e.getCause()));
-					} catch (TimeoutException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-						mSocketCallback.onStartError(mBroadcastHandler, e);
-					} catch (IOException e) {
-						e.printStackTrace();
-						mSocketCallback.onStartError(mBroadcastHandler, e);
-					}
-				}
-			}
+		if (mReceiverFuture != null && !mReceiverFuture.isDone()) {	//接收线程未关闭
+			return false;
+		} 
+		//接收线程未创建或已关闭
+		
+		//如果UDP handler未创建/已销毁，或者创建了但未start
+		if (mUDPHandler == null || !mUDPHandler.isStarted()) {
+			//创建新的handler，并等待start完成
+			createHandlerAndWaitForStart();
 		}
-		if (mBroadcastHandler.isStarted()) {
-			mReceiverFuture = mThreadPool.submit(mBroadcastHandler);
+		
+		//如果Handler start成功，则创建receiver线程
+		if (mUDPHandler.isStarted()) {
+			mReceiverFuture = mThreadPool.submit(mUDPHandler);
 			return true;
 		}
 		return false;
@@ -121,50 +120,31 @@ public class UDPCommunication extends SocketCommunication{
 	 * @param period	广播发送周期(毫秒)
 	 */
 	public boolean startBroadcasterThread(int period){
-		if (mBroadcasterFuture != null){
-			if (!mBroadcasterFuture.isDone()) {	//线程未关闭
-				return false;
-			} else {	//线程已关闭，需重新生成Handler
-				// 
-				if (mBroadcastHandler == null || mBroadcastHandler.isStarted() == false) {
-					mBroadcastHandler = new BroadcastReceiverTask(
-							SocketConst.LOCAL_PORT_UDP_DEFAULT,
-							mSocketCallback);
-					try {
-						//开启start()线程
-						mBroadcastHandler.start();
-						//等待start完成
-						mStartFuture.get(SocketConst.BIO_TIMEOUT_UDP_START, TimeUnit.MILLISECONDS);
-					} catch (InterruptedException e) {
-						e.printStackTrace();
-						mSocketCallback.onStartError(mBroadcastHandler, e);
-					} catch (ExecutionException e) {
-						e.printStackTrace();
-						mSocketCallback.onStartError(mBroadcastHandler, new Exception(e.getCause()));
-					} catch (TimeoutException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-						mSocketCallback.onStartError(mBroadcastHandler, e);
-					} catch (IOException e) {
-						e.printStackTrace();
-						mSocketCallback.onStartError(mBroadcastHandler, e);
-					}
-				}
-			}
+		if (mBroadcasterFuture != null && !mBroadcasterFuture.isDone()) {	//广播线程未关闭
+			return false;
 		}
-		if (mBroadcastHandler.isStarted()) {
+		//重建广播线程，先要检查是否start，正在start的时候需要等待
+		
+		//如果UDP socket未创建或已断开（dispose后为null）
+		if (mUDPHandler == null || !mUDPHandler.isStarted()) {
+			//创建新的handler，并等待start完成
+			createHandlerAndWaitForStart();
+		}
+
+		if (mUDPHandler.isStarted()) {
 			mBroadcasterFuture = mThreadPool.scheduleWithFixedDelay(new Runnable() {
 				@Override
 				public void run() {
-					if(mBroadcastHandler == null 
-							|| !mBroadcastHandler.isStarted()){
-						throw new RuntimeException("IOHandler isn't stated!");
+					if(mUDPHandler != null && mUDPHandler.isStarted()){
+//						throw new RuntimeException("IOHandler isn't stated!");
+						try {
+							for(int protocol = 0; protocol < SDKConst.PROTOCOL_COUNT; protocol++) {
+								mUDPHandler.send(PacketHelper.getBroadcastFindPacket(protocol));
+							} 
+						} catch (Exception e) {
+							e.printStackTrace();
+						}
 					}
-					try {
-						mBroadcastHandler.send(PacketHelper.getBroadcastPacket());
-					} catch (UnsupportedEncodingException e) {
-						e.printStackTrace();
-					}				
 				}
 			}, 0, period, TimeUnit.MILLISECONDS);
 			return true;
@@ -173,6 +153,34 @@ public class UDPCommunication extends SocketCommunication{
 		return false;
 	}
 	
+	private boolean createHandlerAndWaitForStart() {
+		if (mUDPHandler == null) {
+			//创建新的handler
+			mUDPHandler = new UDPTask(mSocketCallback);
+		}
+		try {
+			//开启start()线程
+			mUDPHandler.start();
+			//等待start完成
+			return (Boolean) mStartFuture.get(BIO_TIMEOUT_UDP_START, TimeUnit.MILLISECONDS);
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		} catch (ExecutionException e) {
+			e.printStackTrace();
+			mSocketCallback.onStartError(mUDPHandler, new Exception(e.getCause()));
+		} catch (IOException e) {
+			e.printStackTrace();
+			mSocketCallback.onStartError(mUDPHandler, e);
+		} catch (TimeoutException e) {	//start超时
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		return false;
+	}
+	
+	
+	
 	/**
 	 * 关闭广播接收线程
 	 */
@@ -180,11 +188,11 @@ public class UDPCommunication extends SocketCommunication{
 		if(mReceiverFuture != null && !mReceiverFuture.isDone()){
 //			mBroadcastHandler.stopRunning();
 //			mReceiverFuture.cancel(false); //will block
-			if (mBroadcastHandler != null) {
-				mBroadcastHandler.dispose();
+			if (mUDPHandler != null) {
+				mUDPHandler.dispose();
 			}
 			mReceiverFuture.cancel(true);
-			mBroadcastHandler = null;
+//			mUDPHandler = null;
 		}
 	}
 	
@@ -193,37 +201,41 @@ public class UDPCommunication extends SocketCommunication{
 	 */
 	public void stopBroadcasterThread(){
 		if(mBroadcasterFuture != null && !mBroadcasterFuture.isDone()){
-			if (mBroadcastHandler != null) {
-				mBroadcastHandler.dispose();
-			}
+//			if (mUDPHandler != null) {
+//				mUDPHandler.dispose();
+//			}
 			mBroadcasterFuture.cancel(true); 
-			mBroadcastHandler = null;
+//			mUDPHandler = null;
 		}
 	}
 
 
 	@Override
 	public boolean isWorking() {
-		if (mBroadcastHandler == null || 
-				!mBroadcastHandler.isStarted()) {
-			return false;
+		
+		if (mUDPHandler != null && mUDPHandler.isStarted()) {
+			return true;
 		}
-		return true;
+		return false;
 	}
 	
 	@Override
-	public void dispose() {
-		super.dispose();
-		
-		mThreadPool.shutdownNow();
-		mThreadPool = null;
-		
-		mSocketCallback = null;
-		setNetCallback(null);
+	public void finallize() {
+		super.finallize();
 		
 		stopReceiverThread();
 		stopBroadcasterThread();
 		
+		mThreadPool.shutdownNow();
+		mThreadPool = null;
+		
+		mStartFuture = null;
+		mReceiverFuture = null;
+		mBroadcasterFuture = null;
+		
+		mSocketCallback = null;
+		setNetCallback(null);
+
 		Log.e(this.getClass().getSimpleName(), "Destroy!");
 	}
 	
@@ -292,16 +304,26 @@ public class UDPCommunication extends SocketCommunication{
 
 	
 	
-	private class BroadcastReceiverTask extends UDPBroadcaster{
+	private class UDPTask extends UDPHandler{
 		
 		private AtomicInteger initBroadcastTimes; 
 		
 		private AtomicInteger initBroadcastPeriod; 
-		
-		public BroadcastReceiverTask(int bindPort, ISocketCallback callback) {
+
+		public UDPTask(ISocketCallback callback) {
+			this(PORT_UDP_LOCAL, callback);
+		}
+		public UDPTask(int bindPort, ISocketCallback callback) {
 			super(bindPort, callback);
 			initBroadcastTimes = new AtomicInteger(5);
 			initBroadcastPeriod = new AtomicInteger(100);
+		}
+		@Override
+		public boolean dispose() {
+			
+			stopBroadcasterThread();
+			mUDPHandler = null;
+			return super.dispose();
 		}
 		
 		@Override
@@ -310,7 +332,12 @@ public class UDPCommunication extends SocketCommunication{
 			mStartFuture = mThreadPool.submit(new Callable<Object>() {
 				@Override
 				public Object call() throws Exception {
-					return BroadcastReceiverTask.super.start();
+					synchronized (UDPTask.this) {	//防止两个线程同时start
+						if (!isStarted()) {	//防止重复start
+							return UDPTask.super.start();
+						}
+						return false;
+					}
 				}
 			});
 			return true;
@@ -321,7 +348,9 @@ public class UDPCommunication extends SocketCommunication{
 		public Object call() throws Exception {
 			
 			while(initBroadcastTimes.getAndDecrement() > 0){
-				send(PacketHelper.getBroadcastPacket());
+				for (int protocol = 0; protocol < SDKConst.PROTOCOL_COUNT; protocol++) {
+					send(PacketHelper.getBroadcastFindPacket(protocol));
+				}
 				Thread.sleep(initBroadcastPeriod.get());
 			}
 //			receiveLoop(SocketConst.BIO_TIMEOUT_BROADCAST_RECV, 0);
@@ -329,5 +358,6 @@ public class UDPCommunication extends SocketCommunication{
 			return null;
 		}
 	}
+
 
 }

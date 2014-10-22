@@ -1,10 +1,12 @@
 package com.skyware.sdk.entity;
 
-import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-public class DevData implements IMCUCoder<JSONArray>, IJsonEncoder{
+public class DevData implements IJsonEncoder{
+	
+	/** 有效data字段的数量 */
+	private int dataCount;
 	
 	private String power;
 	
@@ -12,40 +14,28 @@ public class DevData implements IMCUCoder<JSONArray>, IJsonEncoder{
 	public static final String POWER_OFF = "1";
 	public static final String POWER_NAME = "power";
 	
+	public DevData() {}
+	public DevData(DevData cpy) {
+		this.dataCount = cpy.dataCount;
+		this.power = cpy.power;
+		//TODO 拷贝构造函数
+	}
+	
+	public int getDataCount() {
+		return this.dataCount;
+	}
 	public String getPower() {
 		return power;
 	}
 	public void setPower(String power) {
-		this.power = power;
-	}
-	
-	@Override
-	public JSONArray mcuCoder() {
-		// TODO Auto-generated method stub
-		return null;
-	}
-	@Override
-	public boolean mcuDecoder(JSONArray mcuData) {
-		try {
-			String data[] = new String [mcuData.length()];
-			for (int i = 0; i < mcuData.length(); i++) {
-					data[i] = mcuData.getString(i);
+		if (power != null && (power.equals(POWER_ON) || power.equals(POWER_OFF) )) {
+			if (this.power == null || this.power.equals("")) {
+				dataCount ++;
 			}
-			for (String d: data) {
-				if (d.equals("power::0")) {
-					setPower(POWER_ON);
-				} else if (d.equals("power::1")) {
-					setPower(POWER_OFF);
-				}
-			}
-			
-			return true;
-		} catch (JSONException e) {
-			e.printStackTrace();
+			this.power = power;
 		}
-		return false;
 	}
-	
+
 	@Override
 	public JSONObject jsonEncoder() throws JSONException {
 		
@@ -57,6 +47,4 @@ public class DevData implements IMCUCoder<JSONArray>, IJsonEncoder{
 		
 		return json;
 	}
-
-
 }

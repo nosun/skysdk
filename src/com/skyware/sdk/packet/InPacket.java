@@ -1,16 +1,10 @@
 package com.skyware.sdk.packet;
 
-import java.net.SocketAddress;
+import java.net.InetSocketAddress;
+import com.skyware.sdk.packet.entity.PacketEntity.PacketType;
 
 public class InPacket extends Packet{
 	
-	public static enum Type{
-		TYPE_BROADCAST_ACK,	//广播回复
-		TYPE_HEARTBEAT_ACK,	//心跳回复
-		TYPE_COMMAND_ACK,	//指令回复
-		TYPE_DEV_STATUS,	//设备状态
-		TYPE_DEV_ERROR		//设备异常
-	}
 	
 	/** 包的流水号 */
 	private int sn;
@@ -22,13 +16,13 @@ public class InPacket extends Packet{
 //	private SDKEvent resultEvent;
 	
 	/** 包对应的类型 */
-	private Type type;
+	private PacketType type;
 
 	/** 包的发送目标设备MAC */
-	private String sourceMac;
+	private int sourceMac;
 
 	/** 包发送目标的SocketAddress */
-	private SocketAddress sourceAddr;
+	private InetSocketAddress sourceAddr;
 
 
 //	public SDKEvent getResultEvent() {
@@ -55,27 +49,27 @@ public class InPacket extends Packet{
 		this.receiveTime = receiveTime;
 	}
 
-	public String getSourceMac() {
+	public int getSourceMac() {
 		return sourceMac;
 	}
 
-	public void setSourceMac(String sourceMac) {
+	public void setSourceMac(int sourceMac) {
 		this.sourceMac = sourceMac;
 	}
 
-	public SocketAddress getSourceAddr() {
+	public InetSocketAddress getSourceAddr() {
 		return sourceAddr;
 	}
 
-	public void setSourceAddr(SocketAddress sourceAddr) {
+	public void setSourceAddr(InetSocketAddress sourceAddr) {
 		this.sourceAddr = sourceAddr;
 	}
 
-	public Type getType() {
+	public PacketType getType() {
 		return type;
 	}
 
-	public void setType(Type type) {
+	public void setType(PacketType type) {
 		this.type = type;
 	}
 }

@@ -1,5 +1,7 @@
 package com.skyware.sdk.manage;
 
+import java.io.IOException;
+import java.io.InterruptedIOException;
 import java.net.InetSocketAddress;
 import java.net.SocketTimeoutException;
 import java.util.Queue;
@@ -18,27 +20,25 @@ import com.skyware.sdk.callback.ISocketCallback;
 import com.skyware.sdk.callback.TCPCallback;
 import com.skyware.sdk.consts.ErrorConst;
 import com.skyware.sdk.consts.SocketConst;
-import com.skyware.sdk.exception.SocketDisconnectedException;
-import com.skyware.sdk.exception.SocketUnstartedException;
+import com.skyware.sdk.exception.SkySocketCloseByRemoteException;
+import com.skyware.sdk.exception.SkySocketUnstartedException;
 import com.skyware.sdk.packet.InPacket;
 import com.skyware.sdk.packet.OutPacket;
 import com.skyware.sdk.socket.IOHandler;
 import com.skyware.sdk.socket.TCPConnector;
-import com.skyware.sdk.util.PacketHelper;
-import com.skyware.sdk.util.ValidateHelper;
 
 public class TCPCommunication extends SocketCommunication{
 
 	/**
 	 * 保持长连接的设备MAC-socket Map
 	 */
-	private ConcurrentMap<String, IOHandler> mHandlerPersist;
+	private ConcurrentMap<Long, IOHandler> mHandlerPersist;
 	
 	/**
 	 * 短连接的设备MAC-socket Map，一旦接受到回馈数据就断开
 	 * 		可能与一台设备（MAC）保持多个短连接（不同的socket，因为本地端口不同）
 	 */
-	private ConcurrentMap<String, IOHandler> mHandlerTemp;
+	private ConcurrentMap<Long, IOHandler> mHandlerTemp;
 
 	/**
 	 * 处理Socket连接线程的线程池
@@ -53,8 +53,8 @@ public class TCPCommunication extends SocketCommunication{
 		super();
 		mSocketCallback = new TCPCallback(this);
 		
-		mHandlerPersist = new ConcurrentHashMap<String, IOHandler>();
-		mHandlerTemp = new ConcurrentHashMap<String, IOHandler>();
+		mHandlerPersist = new ConcurrentHashMap<Long, IOHandler>();
+		mHandlerTemp = new ConcurrentHashMap<Long, IOHandler>();
 		
 		mThreadPool = new ScheduledThreadPoolExecutor(5);
 		
@@ -65,7 +65,9 @@ public class TCPCommunication extends SocketCommunication{
 	
 	
 
-	public IOHandler startNewTCPTask(String mac, InetSocketAddress targetAddr, boolean isPersist) {
+	
+	
+	public IOHandler startNewTCPTask(long mac, InetSocketAddress targetAddr, boolean isPersist) {
 		TCPConnectTask newHandler = new TCPConnectTask(targetAddr, mSocketCallback, mac);
 		
 		if (isPersist) {
@@ -81,7 +83,8 @@ public class TCPCommunication extends SocketCommunication{
 		return newHandler;
 	}
 	
-	public boolean stopTCPTask(String mac) {
+	
+	public boolean stopTCPTask(long mac) {
 		TCPConnectTask handlerStop = (TCPConnectTask) mHandlerTemp.get(mac);
 		if (handlerStop == null) {
 			handlerStop = (TCPConnectTask) mHandlerPersist.get(mac);
@@ -103,32 +106,37 @@ public class TCPCommunication extends SocketCommunication{
 		}
 	}
 	
-	
-	
-	
+
 	
 	@Override
-	public void sendPacketSync(OutPacket packet) throws IllegalArgumentException{
-		if(packet == null || !ValidateHelper.isMac(packet.getTargetMac()))
+	public void sendPacketSync(OutPacket packet){
+		if(packet == null) {
 			throw new IllegalArgumentException("packet is null or TargetMac is wrong");
-		String targetMac = packet.getTargetMac();
+		}
+		long targetMac = packet.getTargetMac();
 		IOHandler handler = mHandlerPersist.get(targetMac);
-		
-		if (handler != null) {	//复用已有长连接发送数据
-			handler.send(packet);
-			
-		} else {	//尝试复用已有短连接发送数据，如果没有则新建
-			
-			//寻找短连接
-			IOHandler oldHandler = mHandlerTemp.get(targetMac);
-			
-			//如果没有找到，或者找到了但发送失败，则新建Socket任务来发送
-			if (oldHandler == null || !oldHandler.send(packet)) {
+		try {
+			if (handler != null) {	//复用已有长连接发送数据
+				handler.send(packet);
+			} else {	//尝试复用已有短连接发送数据，如果没有则新建
 				
-				startNewTCPTask(targetMac, (InetSocketAddress)packet.getTargetAddr(), 
-						packet.getFlag() == OutPacket.TAG_TCP_PERSIST)	
-						.send(packet);	//发送数据
-			}
+				//寻找短连接
+				IOHandler oldHandler = mHandlerTemp.get(targetMac);
+				
+				//如果没有找到，或者找到了但发送失败，则新建Socket任务来发送
+				if (oldHandler == null || !oldHandler.send(packet)) {
+					
+					startNewTCPTask(targetMac, packet.getTargetAddr(), 
+//						packet.getFlag() == OutPacket.TAG_TCP_PERSIST)	
+							false)		//默认短连接
+							.send(packet);	//发送数据
+				}
+			} 
+		} catch (SkySocketUnstartedException e) {
+			//TODO 重连机制
+			Log.e(this.getClass().getSimpleName(), "Tcp send 失败，需要重连！！！");
+		} catch (IOException e) {
+			
 		}
 	}
 	
@@ -170,7 +178,7 @@ public class TCPCommunication extends SocketCommunication{
 	 *	@param 	mac
 	 *	@return	true--成功设置 false--mac不存在TCP连接
 	 */
-	public boolean setTCPPersist(String mac, boolean isPersist){
+	public boolean setTCPPersist(long mac, boolean isPersist){
 		IOHandler persist = mHandlerPersist.get(mac);
 		IOHandler temp = mHandlerTemp.get(mac);
 		if (persist != null) {
@@ -215,11 +223,9 @@ public class TCPCommunication extends SocketCommunication{
 	}
 	
 	@Override
-	public void dispose(){
-		super.dispose();
-		
-		mSocketCallback = null;
-
+	public void finallize(){
+		super.finallize();
+	
 		for (IOHandler handlerStop : mHandlerPersist.values()) {
 			if (handlerStop != null) {
 				handlerStop.dispose();
@@ -230,12 +236,14 @@ public class TCPCommunication extends SocketCommunication{
 				handlerStop.dispose();
 			}
 		}
+		
 		mHandlerPersist = null;
 		mHandlerTemp = null;
 
 		mThreadPool.shutdownNow();
 		mThreadPool = null;
 		
+		mSocketCallback = null;
 		setNetCallback(null);
 		
 		Log.e(this.getClass().getSimpleName(), "Destroy!");
@@ -250,10 +258,10 @@ public class TCPCommunication extends SocketCommunication{
 	 * @param h
 	 */
 	public void onConnectSuccess(IOHandler h){
-		if (mNetCallback == null)
-			return;
-		if (h instanceof TCPConnector) {
-			mNetCallback.onConnectTCPSuccess(((TCPConnector) h).getMac());
+		if (mNetCallback != null){
+			if (h instanceof TCPConnector) {
+				mNetCallback.onConnectTCPSuccess(((TCPConnector) h).getMac());
+			}
 		}
 	}
 
@@ -265,49 +273,40 @@ public class TCPCommunication extends SocketCommunication{
 	 *	@param errMsg
 	 */
 	public void onConnectError(IOHandler h, ErrorConst errType, String errMsg) {
-		if (mNetCallback == null)
-			return;
-		if (h instanceof TCPConnector) {
-			mNetCallback.onConnectTCPError(((TCPConnector) h).getMac(), errType, errMsg);
+		if (mNetCallback != null){
+			if (h instanceof TCPConnector) {
+				if (!h.isRunning()) {
+					mNetCallback.onConnectTCPError(((TCPConnector) h).getMac(), errType, errMsg);
+				}
+			}
 		}
 	}
 	
 	@Override
 	public void onReceive(InPacket packet) {
-		if (mNetCallback == null)
-			return;
-		//解析TCP的sn和Type
-		int sn = PacketHelper.getPacketSn(packet);
-		if (sn >= 0) {
-			packet.setSn(sn);
+		if (mNetCallback != null){
+			mNetCallback.onReceiveTCP(packet);
 		}
-		
-		InPacket.Type type= PacketHelper.getPacketType(packet);
-		if (type != null) {
-			packet.setType(type);
-		}
-		
-		mNetCallback.onReceiveTCP(packet);
 	}
 
 	@Override
 	public void onReceiveError(IOHandler h, ErrorConst errType, String errMsg) {
-		if (mNetCallback == null)
-			return;
-		if (h instanceof TCPConnector) {
-//			if (errType == ErrorConst.ESOCK_BIO_CLOSE_BY_REMOTE) {
-//				mNetCallback.onReceiveTCPError(((TCPConnector) h).getMac(), errType, errMsg);
-//			} else {
-			mNetCallback.onReceiveTCPError(((TCPConnector) h).getMac(), errType, errMsg);
+		if (mNetCallback != null){
+			if (h instanceof TCPConnector) {
+//				if (errType == ErrorConst.ESOCK_BIO_CLOSE_BY_REMOTE) {
+//					mNetCallback.onReceiveTCPError(((TCPConnector) h).getMac(), errType, errMsg);
+//				} else {
+				mNetCallback.onReceiveTCPError(((TCPConnector) h).getMac(), errType, errMsg);
+			}
 		}
 	}
 
 	@Override
 	public void onCloseFinished(IOHandler h) {
-		if (mNetCallback == null)
-			return;
-		if (h instanceof TCPConnector) {
-			mNetCallback.onCloseTCP(((TCPConnector) h).getMac());
+		if (mNetCallback != null){
+			if (h instanceof TCPConnector) {
+				mNetCallback.onCloseTCP(((TCPConnector) h).getMac());
+			}
 		}
 	}
 
@@ -348,9 +347,9 @@ public class TCPCommunication extends SocketCommunication{
 		public int getMaxReconnectTimes() {
 			return maxReconnectTimes.get();
 		}
-		public void setMaxReconnectTimes(int maxReconnectTimes) {
-			this.maxReconnectTimes.set(maxReconnectTimes);
-		}
+//		public void setMaxReconnectTimes(int maxReconnectTimes) {
+//			this.maxReconnectTimes.set(maxReconnectTimes);
+//		}
 		public Future<Object> getFuture() {
 			return mFuture;
 		}
@@ -358,21 +357,20 @@ public class TCPCommunication extends SocketCommunication{
 			this.mFuture = mFuture;
 		}
 		
-		public TCPConnectTask(InetSocketAddress targetAddress, ISocketCallback socketCallback, String mac) {
+		public TCPConnectTask(InetSocketAddress targetAddress, ISocketCallback socketCallback, long mac) {
 			super(targetAddress, socketCallback, mac);
 			isPersist = new AtomicBoolean(false);
 			sendQueue = new ConcurrentLinkedQueue<OutPacket>();
 			maxReconnectTimes = new AtomicInteger(SocketConst.BIO_TCP_MAX_RECONNECT_TIMES); 
 		}
 		
-		
 		@Override
-		public boolean send(OutPacket packet) {
+		public boolean send(OutPacket packet) throws IOException {
 			if (!isStarted()) {
 				sendQueue.offer(packet);
 				return true;
 			} 
-			
+
 			return super.send(packet);
 		}
 		
@@ -392,11 +390,8 @@ public class TCPCommunication extends SocketCommunication{
 			
 			int recvSucessTimes = 0;
 			
-			start();
-			
-			while (!isExit.get()) {  
+			do {  
 				mIsRunning = true;
- 
 				try {
 					if(isStarted()){
 						
@@ -417,30 +412,36 @@ public class TCPCommunication extends SocketCommunication{
 						}
 						
 					} else {
-						Log.e(this.getClass().getSimpleName(), "reConnectTimes = "+reConnectTimes);
-						// 如果超过重连次数，则关闭线程
-						if(reConnectTimes > getMaxReconnectTimes()){
-							isExit.set(true); 
-							//TODO 这里可以尝试return异常值，交与Future
-						} else if(!start()){ // 尝试连接，如果失败，则计次
-							reConnectTimes++;
+						if(!start()){ // 尝试连接，如果失败，则计次
+							if(++reConnectTimes >= getMaxReconnectTimes()){
+								// 如果超过重连次数，则关闭线程
+								isExit.set(true); 
+								onConnectError(this, ErrorConst.ESOCK_IO_UNKNOWN, "未知异常，socket开启失败");
+							} 
+							Log.e(this.getClass().getSimpleName(), "reConnectTimes = "+reConnectTimes);
 						}
 					}
-				} catch (SocketUnstartedException e) {
-					e.printStackTrace();
+				} catch (SkySocketUnstartedException e) {
 					//连接未开启，继续尝试重连
-				} catch (SocketDisconnectedException e) {	//对方关闭连接
-					e.printStackTrace();
+				} catch (SkySocketCloseByRemoteException e) {	//对方关闭连接
 					// 如果是TCP长连接，或者短连接有尚未发送的数据，则重连
 //					if (isTCPPersist() || sendQueue.peek() != null) {              
-					reConnectTimes++;
+					if(++reConnectTimes >= getMaxReconnectTimes()){
+						isExit.set(true); 
+						mSocketCallback.onStartError(this, e);
+					}
+					Log.e(this.getClass().getSimpleName(), "reConnectTimes = "+reConnectTimes);
 //					} else {	
 //						isExit.set(true); //如果连接已经断开，则退出循环
 //					}
 				} catch (SocketTimeoutException e) {	//Connect超时，start失败
-					e.printStackTrace();
-					reConnectTimes++;
-					
+					if(++reConnectTimes >= getMaxReconnectTimes()){
+						isExit.set(true); 
+						mSocketCallback.onStartError(this, e);
+					}
+					Log.e(this.getClass().getSimpleName(), "reConnectTimes = "+reConnectTimes);
+				} catch (InterruptedIOException e) {	//Read超时
+					// 继续读
 				} finally{
 					// 如果退出任务线程，则释放资源
 					if (isExit.get()) {
@@ -448,12 +449,12 @@ public class TCPCommunication extends SocketCommunication{
 						break;
 					}		
 				}
-			}
+			} while (!isExit.get());
 			
 			Log.e(this.getClass().getSimpleName(), "TCP Task stop! task_info:" + this);
 			return null;
 		}
-		
+
 	}
 
 

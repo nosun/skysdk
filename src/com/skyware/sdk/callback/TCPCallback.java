@@ -8,7 +8,7 @@ import android.util.Log;
 
 import com.skyware.sdk.consts.ErrorConst;
 import com.skyware.sdk.consts.SocketConst;
-import com.skyware.sdk.exception.SocketDisconnectedException;
+import com.skyware.sdk.exception.SkySocketCloseByRemoteException;
 import com.skyware.sdk.manage.TCPCommunication;
 import com.skyware.sdk.packet.InPacket;
 import com.skyware.sdk.packet.OutPacket;
@@ -67,7 +67,7 @@ public class TCPCallback implements ISocketCallback {
 		ErrorConst errType = null;
 		//SocketChannel.write()抛出的Execption
 
-		if (e instanceof SocketDisconnectedException ) {
+		if (e instanceof SkySocketCloseByRemoteException ) {
 			//if this TCP client socket is not yet connected.
 			errType = ErrorConst.ESOCK_BIO_CLOSE_BY_REMOTE;
 		} else if (e instanceof EOFException ) {
@@ -94,7 +94,7 @@ public class TCPCallback implements ISocketCallback {
 		ErrorConst errType = null;
 		//SocketChannel.write()抛出的Execption
 		
-		if (e instanceof SocketDisconnectedException ) {
+		if (e instanceof SkySocketCloseByRemoteException ) {
 			//if this TCP client socket is not yet connected.
 			errType = ErrorConst.ESOCK_BIO_CLOSE_BY_REMOTE;
 		} else if (e instanceof IOException) {

@@ -3,6 +3,7 @@ package com.skyware.sdk.callback;
 import com.skyware.sdk.consts.ErrorConst;
 import com.skyware.sdk.packet.InPacket;
 import com.skyware.sdk.packet.OutPacket;
+import com.skyware.sdk.packet.entity.PacketEntity.DevStatus;
 
 public interface IBizCallback {
 
@@ -19,30 +20,30 @@ public interface IBizCallback {
 	/**
 	 * 连接设备成功
 	 * 
-	 * @param mac
+	 * @param deviceMac
 	 */
-	void onConnectDeviceSuccess(String mac);
+	void onConnectDeviceSuccess(long deviceMac);
 
 	/**
 	 * 连接设备出错
 	 * 
-	 * @param mac
+	 * @param deviceMac
 	 *            设备mac
 	 * @param errType
 	 *            出错类型
 	 * @param errMsg
 	 *            出错消息
 	 */
-	void onConnectDeviceError(String mac, ErrorConst errType, String errMsg);
+	void onConnectDeviceError(long deviceMac, ErrorConst errType, String errMsg);
 
 	/**
 	 * 设备连接断开
 	 * 
-	 * @param mac
+	 * @param deviceMac
 	 * @param errType
 	 * @param errMsg
 	 */
-	void onDeviceDisconnected(String mac, ErrorConst errType, String errMsg);
+	void onDeviceDisconnected(long deviceMac, ErrorConst errType, String errMsg);
 
 	/**
 	 * 发现新设备的回调
@@ -52,15 +53,15 @@ public interface IBizCallback {
 	 * @param deviceIp
 	 *            设备IP
 	 */
-	void onDiscoverNewDevice(String deviceMac, String deviceIp);
+	void onDiscoverNewDevice(long deviceMac, String deviceIp);
 
 	/**
-	 * 接收到TCP包后的回调
+	 * 接收到设备的状态上报
 	 * 
-	 * @param packet
+	 * @param status
 	 *            接收到的数据包
 	 */
-	void onRecvDevStatus(InPacket packet);
+	void onRecvDevStatus(DevStatus status);
 
 	/**
 	 * 接收到任何类型UDP包后的回调，用于调试和打印日志

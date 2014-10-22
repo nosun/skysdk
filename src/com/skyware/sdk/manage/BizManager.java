@@ -1,6 +1,5 @@
 package com.skyware.sdk.manage;
 
-import java.io.UnsupportedEncodingException;
 import java.nio.charset.Charset;
 import java.util.HashMap;
 import java.util.Map;
@@ -15,12 +14,14 @@ import android.util.Log;
 import com.skyware.sdk.callback.IBizCallback;
 import com.skyware.sdk.consts.ErrorConst;
 import com.skyware.sdk.consts.SDKConst;
+import com.skyware.sdk.entity.CmdInfo;
 import com.skyware.sdk.entity.DeviceInfo;
 import com.skyware.sdk.entity.ErrorInfo;
 import com.skyware.sdk.packet.InPacket;
 import com.skyware.sdk.packet.OutPacket;
-import com.skyware.sdk.util.PacketHelper;
-import com.skyware.sdk.util.PacketHelper.DevStatus;
+import com.skyware.sdk.packet.entity.PacketEntity.DevStatus;
+import com.skyware.sdk.packet.entity.PacketEntity.PacketType;
+import com.skyware.sdk.util.ConvertUtil;
 
 public class BizManager {
 
@@ -46,7 +47,7 @@ public class BizManager {
 		return mContext;
 	}
 	
-	private Map<String, DeviceInfo> mDeviceMap;
+	private Map<Long, DeviceInfo> mDeviceMap;
 	
 	private NetworkManager mNetworkManager;
 	
@@ -58,7 +59,7 @@ public class BizManager {
 	public void init(Context context) {
 		this.mContext = context;
 		
-		mDeviceMap = new ConcurrentHashMap<String, DeviceInfo>();
+		mDeviceMap = new ConcurrentHashMap<Long, DeviceInfo>();
 		
 		mNetworkManager = new NetworkManager(new MyBizCallback());
 	}
@@ -68,12 +69,12 @@ public class BizManager {
 	 *
 	 *	@param context	application
 	 */
-	public void dispose() {
+	public void finallize() {
 		mContext = null;
 		mUIHandler = null;
 		
 		mDeviceMap = null;
-		mNetworkManager.dispose();
+		mNetworkManager.finallize();
 		mNetworkManager = null;
 	}
 	
@@ -98,7 +99,7 @@ public class BizManager {
 	 *	连接设备
 	 *
 	 */
-	public void startConnectToDevice(String mac) {
+	public void startConnectToDevice(long mac) {
 		Log.e(this.getClass().getSimpleName(), "startConnectToDevice()! mac: " + mac);
 //		try {
 		mNetworkManager.startNewConnect(mac, true);
@@ -115,7 +116,7 @@ public class BizManager {
 	 *	断开连接
 	 *
 	 */
-	public void stopConnectToDevice(String mac) {
+	public void stopConnectToDevice(long mac) {
 		Log.e(this.getClass().getSimpleName(), "stopConnectToDevice()! mac: " + mac);
 		
 		mNetworkManager.stopConnect(mac);
@@ -125,23 +126,10 @@ public class BizManager {
 	/**
 	 *	向设备发送命令
 	 */
-	public void sendCmdToDevice(String mac, String[] cmd, int sn) {
-		Log.e(this.getClass().getSimpleName(), "sendCmdToDevice()! mac: " + mac + ",cmd: " + cmd[0] + ",sn: " + sn);
-
-		try {
-			OutPacket packet = PacketHelper.getDevCmdPacket(sn, cmd);
-			
-//			Log.e(this.getClass().getSimpleName(), "packet: " + new String(packet.getContent(), Charset.forName("US-ASCII")));
-			if (packet != null ) {
-				mNetworkManager.sendPacketToDevice(mac, packet, true);
-			}
-		} catch (UnsupportedEncodingException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (JSONException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+	public void sendCmdToDevice(long mac, CmdInfo cmd, int sn) {
+		Log.e(this.getClass().getSimpleName(), "sendCmdToDevice()! mac: " + mac + ",cmd: " + cmd + ",sn: " + sn);
+		
+		mNetworkManager.sendPacketToDevice(mac, PacketType.DEVCOMMAND, cmd, sn, true);
 	}
 	
 	
@@ -156,35 +144,35 @@ public class BizManager {
 		}
 
 		@Override
-		public void onConnectDeviceSuccess(String mac) {
+		public void onConnectDeviceSuccess(long deviceMac) {
 			if (mUIHandler != null) {
-				mUIHandler.obtainMessage(SDKConst.MSG_DEVICE_CONNECT, 1, -1, mac).sendToTarget();
+				mUIHandler.obtainMessage(SDKConst.MSG_DEVICE_CONNECT, 1, -1, deviceMac).sendToTarget();
 			}
 		}
 
 		@Override
-		public void onConnectDeviceError(String mac, ErrorConst errType, String errMsg) {
+		public void onConnectDeviceError(long deviceMac, ErrorConst errType, String errMsg) {
 			if (mUIHandler != null) {
 				HashMap<String, Object> map = new HashMap<String, Object>();
 				ErrorInfo errInfo = new ErrorInfo();
 				errInfo.setErrType(errType);
 				errInfo.setErrStr(errMsg);
 				
-				map.put("KEY_MAC", mac);
+				map.put("KEY_MAC", deviceMac);
 				map.put("KEY_ERR", errInfo);
 				mUIHandler.obtainMessage(SDKConst.MSG_DEVICE_CONNECT, 0, -1, map).sendToTarget();
 			}
 		}
 		
 		@Override
-		public void onDeviceDisconnected(String mac, ErrorConst errType, String errMsg) {
+		public void onDeviceDisconnected(long deviceMac, ErrorConst errType, String errMsg) {
 			if (mUIHandler != null) {
 				HashMap<String, Object> map = new HashMap<String, Object>();
 				ErrorInfo errInfo = new ErrorInfo();
 				errInfo.setErrType(errType);
 				errInfo.setErrStr(errMsg);
 				
-				map.put("KEY_MAC", mac);
+				map.put("KEY_MAC", deviceMac);
 				map.put("KEY_ERR", errInfo);
 				mUIHandler.obtainMessage(SDKConst.MSG_DEVICE_DISCONN, map).sendToTarget();
 			}
@@ -201,11 +189,12 @@ public class BizManager {
 		}
 
 		@Override
-		public void onDiscoverNewDevice(String deviceMac, String deviceIp) {
+		public void onDiscoverNewDevice(long deviceMac, String deviceIp) {
 			if (mUIHandler != null) {
 				DeviceInfo deviceInfo = new DeviceInfo();
 				deviceInfo.setIp(deviceIp);
-				deviceInfo.setMac(deviceMac);
+				deviceInfo.setMac(ConvertUtil.macLong2String(deviceMac));
+				//TODO 还有其他欲上报的信息
 				
 				//TODO 向服务器验证，注册该设备
 				
@@ -217,10 +206,8 @@ public class BizManager {
 
 
 		@Override
-		public void onRecvDevStatus(InPacket packet) {
+		public void onRecvDevStatus(DevStatus devStatus) {
 			if (mUIHandler != null) {
-				DevStatus devStatus = PacketHelper.resolveDevStatPacket(packet);
-				
 				try {
 					if (SDKConst.DEBUG_FLAG) {
 						mUIHandler.obtainMessage(SDKConst.MSG_DEVICE_STATUS_DEBUG, devStatus).sendToTarget();
@@ -249,7 +236,7 @@ public class BizManager {
 		@Override
 		public void onSendTCPPacketSuccess(OutPacket packet) {
 			if (mUIHandler != null) {
-				if(packet.getType() == OutPacket.Type.TYPE_DEVCOMMAND) {
+				if(packet.getType() == PacketType.DEVCOMMAND) {
 					mUIHandler.obtainMessage(SDKConst.MSG_DEVICE_CMD_ACK, packet.getSn(), 1, packet.getTargetMac()).sendToTarget();
 				}
 			}
@@ -259,7 +246,7 @@ public class BizManager {
 		public void onSendTCPPacketError(ErrorConst errType, String errMsg,
 				OutPacket packet) {
 			if (mUIHandler != null) {
-				if(packet.getType() == OutPacket.Type.TYPE_DEVCOMMAND) {
+				if(packet.getType() == PacketType.DEVCOMMAND) {
 					
 					HashMap<String, Object> map = new HashMap<String, Object>();
 					ErrorInfo errInfo = new ErrorInfo();

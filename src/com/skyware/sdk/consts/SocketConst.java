@@ -6,25 +6,25 @@ public class SocketConst {
     public static final int SN_MAX = 65536;
 	
 	/** TCP包最大大小 **/
-    public static final int TCP_PACKET_MAX_SIZE = 1024;
+//    public static final int TCP_PACKET_MAX_SIZE = 1024;
     /** UDP包最大大小 **/
-    public static final int UDP_PACKET_MAX_SIZE = 128;
+//    public static final int UDP_PACKET_MAX_SIZE = 128;
 
     /** 发送Buffer最大大小 **/
     public static final int SEND_BUFFER_MAX_SIZE = 2048;
     /** 接收Buffer最大大小 **/
     public static final int RECV_BUFFER_MAX_SIZE = 2048;
     
-    /** 设备TCP端口默认值 */
-    public static final int REMOTE_PORT_TCP_DEFAULT = 8899;
-    /** 设备UDP端口默认值 */
-    public static final int REMOTE_PORT_UDP_DEFAULT = 48899;
-    /** 设备UDP本地监听端口 */
-    public static final int LOCAL_PORT_UDP_DEFAULT = 8888;
+    /** 设备TCP远程端口规定值（不可变）（利尔达） */
+    public static final int[] PORT_TCP_REMOTE = {8899, 0};
+    /** 设备UDP远程端口规定值（不可变）（利尔达、博联） */
+    public static final int[] PORT_UDP_REMOTE = {48899, 80};
+    /** 设备UDP广播本地监听端口（利尔达、博联插座） */
+    public static final int PORT_UDP_LOCAL = 8888;
+    
     /** 本地广播地址默认值 */
     public static final String BROADCAST_ADDR_DEFAULT = "192.168.0.1";
-    /** 广播内容 */
-    public static final String BROADCAST_CONTENT_DEFAULT = "HF-A11ASSISTHREAD";
+
     
     /** 广播内容的字符编码 */
     public static final String CHARSET_BROADCAST_CONTENT = "US-ASCII";
@@ -35,7 +35,7 @@ public class SocketConst {
     public static final int NIO_SELECT_TIMEOUT = 500;
     
     /** Block IO TCP connect()的超时时间 */
-    public static final int BIO_TIMEOUT_TCP_CONNECT = 500;
+    public static final int BIO_TIMEOUT_TCP_CONNECT = 150;
     /** Block IO TCP accept()和read()的超时时间 */
     public static final int BIO_TIMEOUT_TCP_READ = 500;
     /** Block IO UDP start()的超时时间 */
@@ -53,7 +53,7 @@ public class SocketConst {
     public static final int BIO_TIMEOUT_THREAD_BROADCAST_RECV = 5000;
     
     /** Block IO TCP 最大重连的次数 */
-    public static final int BIO_TCP_MAX_RECONNECT_TIMES = 5;
+    public static final int BIO_TCP_MAX_RECONNECT_TIMES = 4;
     /** Block IO TCP 最大接收重试的次数（短连接，乘以IO间隔为接收等待时间） */
 //    public static final int BIO_TCP_MAX_RECV_RETRY_TIMES = 10;
     /** Block IO UDP 最大重传的次数 */

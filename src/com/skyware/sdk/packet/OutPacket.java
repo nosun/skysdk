@@ -1,17 +1,12 @@
 package com.skyware.sdk.packet;
 
-import java.net.SocketAddress;
+import java.net.InetSocketAddress;
+
+import com.skyware.sdk.packet.entity.PacketEntity.PacketType;
 
 
 public class OutPacket extends Packet{
-	
-	public static enum Type{
-		TYPE_BROADCAST,		//广播
-		TYPE_DEVCOMMAND,	//指令
-		TYPE_HEARTBEAT,		//心跳
-		TYPE_DEVCHECK,		//查询
-		TYPE_DEVSTAT_ACK,	//状态回复
-	}
+
 	/** 包的流水号 */
 	private int sn;
 
@@ -22,13 +17,13 @@ public class OutPacket extends Packet{
 //	private SDKEvent resultEvent;
 
 	/** 包对应的类型 */
-	private Type type;
+	private PacketType type;
 
 	/** 包的发送目标设备MAC（广播包没有） */
-	private String targetMac;
+	private long targetMac;
 
 	/** 包发送目标的SocketAddress（广播包没有）*/
-	private SocketAddress targetAddr;
+	private InetSocketAddress targetAddr;
 
 	/** 用于一些特殊业务用途 */
 	private int flag;
@@ -51,11 +46,11 @@ public class OutPacket extends Packet{
 		this.sn = sn;
 	}
 
-	public Type getType() {
+	public PacketType getType() {
 		return type;
 	}
 
-	public void setType(Type type) {
+	public void setType(PacketType type) {
 		this.type = type;
 	}
 	
@@ -67,19 +62,19 @@ public class OutPacket extends Packet{
 		this.sendTime = receiveTime;
 	}
 
-	public String getTargetMac() {
+	public long getTargetMac() {
 		return targetMac;
 	}
 
-	public void setTargetMac(String targetMac) {
+	public void setTargetMac(long targetMac) {
 		this.targetMac = targetMac;
 	}
 
-	public SocketAddress getTargetAddr() {
+	public InetSocketAddress getTargetAddr() {
 		return targetAddr;
 	}
 
-	public void setTargetAddr(SocketAddress targetAddr) {
+	public void setTargetAddr(InetSocketAddress targetAddr) {
 		this.targetAddr = targetAddr;
 	}
 

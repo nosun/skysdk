@@ -1,7 +1,14 @@
 package com.skyware.sdk.consts;
 
-public class SDKConst {
 
+public class SDKConst {
+	
+	public static final int PROTOCOL_COUNT 	= 2; 
+	
+	public static final int PROTOCOL_UNKNOWN 		= -0X01; 
+	public static final int PROTOCOL_LIERDA 		= 0X00; 
+	public static final int PROTOCOL_BROADLINK 	= 0X01; 
+	
 /*	public static final int CMD_DISCOVER_START 	= 0x001;
 	public static final int CMD_DISCOVER_STOP 	= 0x002;
 	public static final int CMD_DEVICE_CONTROL 	= 0x101;

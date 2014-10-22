@@ -8,14 +8,12 @@ import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
-import java.util.concurrent.TimeoutException;
-
 import android.util.Log;
 
 import com.skyware.sdk.callback.ISocketCallback;
 import com.skyware.sdk.consts.SocketConst;
-import com.skyware.sdk.exception.SocketDisconnectedException;
-import com.skyware.sdk.exception.SocketUnstartedException;
+import com.skyware.sdk.exception.SkySocketCloseByRemoteException;
+import com.skyware.sdk.exception.SkySocketUnstartedException;
 import com.skyware.sdk.packet.InPacket;
 import com.skyware.sdk.packet.OutPacket;
 import com.skyware.sdk.util.FrameHelper;
@@ -26,7 +24,7 @@ public abstract class TCPConnector extends BIOHandler{
 	protected Socket mSocket;
 	
 	/** Socket连接的设备Mac，用于修改HashMap */
-	protected String mac;
+	protected long mac;
 	
 	/** BIO TCP 接收的输入流 */
 	protected InputStream inputStream;
@@ -37,7 +35,7 @@ public abstract class TCPConnector extends BIOHandler{
 	/**
 	 * 构造函数I：指定address，建立新的socket连接
 	 */
-	public TCPConnector(InetSocketAddress targetAddress, ISocketCallback socketCallback, String mac) {
+	public TCPConnector(InetSocketAddress targetAddress, ISocketCallback socketCallback, long mac) {
 		super();
 		this.mTargetAddress = targetAddress;
 		setSocketCallback(socketCallback);
@@ -47,18 +45,18 @@ public abstract class TCPConnector extends BIOHandler{
 	/**
 	 * 构造函数II：复用指定的socket
 	 */
-	public TCPConnector(Socket socket, ISocketCallback socketCallback, String mac) {
+	public TCPConnector(Socket socket, ISocketCallback socketCallback, long mac) {
 		super();
 		this.mSocket = socket;
 		setSocketCallback(socketCallback);
 		this.setMac(mac);
 	}
 	
-	public String getMac() {
+	public long getMac() {
 		return mac;
 	}
 
-	public void setMac(String mac) {
+	public void setMac(long mac) {
 		this.mac = mac;
 	}
 	
@@ -111,7 +109,7 @@ public abstract class TCPConnector extends BIOHandler{
 			return true;
 		} catch (SocketTimeoutException e){ 
 			e.printStackTrace();
-			mSocketCallback.onStartError(this, e);
+//			mSocketCallback.onStartError(this, e);	交与上层
 			throw e;
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -125,10 +123,10 @@ public abstract class TCPConnector extends BIOHandler{
 	 * 发送TCP包
 	 */
 	@Override
-	public boolean send(OutPacket packet) {
+	public boolean send(OutPacket packet) throws IOException{
 		try {
 			if (!isStarted()) {
-				throw new SocketUnstartedException("TCP socket didn't start yet!");
+				throw new SkySocketUnstartedException("TCP socket didn't start yet!");
 			}
 			mSendMsgSize = packet.getContent().length;
 			System.arraycopy(packet.getContent(), 0, mSendBuf, 0, mSendMsgSize);
@@ -144,6 +142,9 @@ public abstract class TCPConnector extends BIOHandler{
 			mSocketCallback.onSendFinished(packet);
 			
 			return true;
+		} catch (SkySocketUnstartedException e) {
+			e.printStackTrace();
+			throw e;
 		} catch (Exception e) {
 			e.printStackTrace();
 			mSocketCallback.onSendError(e, packet);
@@ -157,10 +158,10 @@ public abstract class TCPConnector extends BIOHandler{
 	 * 接收TCP数据（阻塞，设置timeout）
 	 */
 	@Override
-	public boolean receive(int readTimeout) throws TimeoutException{
+	public boolean receive(int readTimeout) throws IOException{
 		try {
 			if (!isStarted()) {
-				throw new SocketUnstartedException("TCP socket didn't start yet!");
+				throw new SkySocketUnstartedException("TCP socket didn't start yet!");
 			}
 			if (getReadTimeout() != readTimeout) {
 				setReadTimeout(readTimeout);
@@ -170,18 +171,18 @@ public abstract class TCPConnector extends BIOHandler{
 			//IO读 + 解帧
 			mRecvMsgSize = FrameHelper.ReframeMsg(mRecvBuf, inputStream);
 			
-			Log.e(this.getClass().getSimpleName(), "stop readStream!");
+//			Log.e(this.getClass().getSimpleName(), "stop readStream!");
 			// 判断TCP连接是否已经断开
 			if (mRecvMsgSize == 0) {
-				mSocketCallback.onCloseFinished(this);
-				dispose();
-				throw new SocketDisconnectedException("TCP socket closed by remote");
+//				mSocketCallback.onCloseFinished(this);
+//				dispose();
+				throw new SkySocketCloseByRemoteException("TCP socket closed by remote");
 			}
 			
 			//封装InPacket
 			InPacket packet = new InPacket();
 			packet.setReceiveTime(System.currentTimeMillis());
-			packet.setSourceAddr(mSocket.getRemoteSocketAddress());
+			packet.setSourceAddr((InetSocketAddress) mSocket.getRemoteSocketAddress());
 			
 			byte[] content = new byte[mRecvMsgSize];
 			System.arraycopy(mRecvBuf, 0, content, 0, mRecvMsgSize);
@@ -193,18 +194,18 @@ public abstract class TCPConnector extends BIOHandler{
 			mSocketCallback.onReceive(packet);
 			//reset();	
 			return true;
-		} catch (SocketUnstartedException e){
+		} catch (SkySocketUnstartedException e){
 			e.printStackTrace();	
-			mSocketCallback.onReceiveError(this, e);
+//			mSocketCallback.onReceiveError(this, e);
 			throw e;
-		} catch (SocketDisconnectedException e){
+		} catch (SkySocketCloseByRemoteException e){
 			e.printStackTrace();	
-			mSocketCallback.onReceiveError(this, e);
+//			mSocketCallback.onReceiveError(this, e);
 			throw e;
 		} catch (InterruptedIOException e){
 			e.printStackTrace();	
-			mSocketCallback.onReceiveError(this, e);
-			throw new TimeoutException("TCP read() is timeout");
+//			mSocketCallback.onReceiveError(this, e);
+			throw e;
 		} catch (Exception e) {
 			e.printStackTrace();		
 			mSocketCallback.onReceiveError(this, e);

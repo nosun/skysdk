@@ -21,7 +21,7 @@ public interface INetCallback {
 	 * 
 	 * @param mac
 	 */
-	void onConnectTCPSuccess(String mac);
+	void onConnectTCPSuccess(long mac);
 
 	/**
 	 * TCP连接出错
@@ -33,7 +33,7 @@ public interface INetCallback {
 	 * @param errMsg
 	 *            出错消息
 	 */
-	void onConnectTCPError(String mac, ErrorConst errType, String errMsg);
+	void onConnectTCPError(long mac, ErrorConst errType, String errMsg);
 
 	/**
 	 * 成功接收到TCP包后的回调
@@ -61,7 +61,7 @@ public interface INetCallback {
 	 * @param errMsg
 	 *            出错信息
 	 */
-	void onReceiveTCPError(String mac, ErrorConst errType, String errMsg);
+	void onReceiveTCPError(long mac, ErrorConst errType, String errMsg);
 
 	/**
 	 * 接收UDP包错误
@@ -71,7 +71,7 @@ public interface INetCallback {
 	 * @param errMsg
 	 *            出错信息
 	 */
-	void onReceiveUDPError(String mac, ErrorConst errType, String errMsg);
+	void onReceiveUDPError(long mac, ErrorConst errType, String errMsg);
 
 	/**
 	 * 发送包完成
@@ -96,6 +96,6 @@ public interface INetCallback {
 	 * 
 	 * @param mac
 	 */
-	void onCloseTCP(String mac);
+	void onCloseTCP(long mac);
 
 }
