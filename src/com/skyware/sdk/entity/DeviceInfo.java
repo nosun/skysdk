@@ -2,11 +2,19 @@ package com.skyware.sdk.entity;
 
 public class DeviceInfo {
 
+	public static enum DevType{
+		AIR_PURIFIER,
+		PLUGIN,
+		AIR_MONITOR
+	};
+	
 //	protected String id;
 	private String mac;
 //	protected String sn;
 	private String ip;
 	
+	private int protocol;
+	private DevType devType;
 	private DevData data;
 	
 	
@@ -29,6 +37,20 @@ public class DeviceInfo {
 	}
 	public void setDevData(DevData data) {
 		this.data = data;
+	}
+	
+	public int getProtocol() {
+		return protocol;
+	}
+	public void setProtocol(int protocol) {
+		this.protocol = protocol;
+	}
+	
+	public DevType getDevType() {
+		return devType;
+	}
+	public void setDevType(DevType devType) {
+		this.devType = devType;
 	}
 	
 	

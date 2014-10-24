@@ -3,7 +3,7 @@ package com.skyware.sdk.packet.entity;
 import java.util.HashMap;
 import java.util.Map;
 
-public class LierdaLegalHelper {
+public class MooreLegalHelper {
 	
 	//ret值 Code-Describe Map
 	private static final Map<Integer, String> retCodes;

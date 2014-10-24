@@ -196,11 +196,7 @@ public abstract class SocketCommunication {
 	 * 
 	 * @param packet
 	 */
-	public void onSendFinished(OutPacket packet) {
-		if (mNetCallback == null)
-			return;
-		mNetCallback.onSendFinished(packet);
-	}
+	abstract public void onSendFinished(OutPacket packet);
 	
 	/**
 	 *	发送错误回调

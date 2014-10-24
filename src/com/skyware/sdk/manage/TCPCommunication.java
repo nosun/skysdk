@@ -9,7 +9,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Future;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -19,6 +18,7 @@ import com.skyware.sdk.callback.INetCallback;
 import com.skyware.sdk.callback.ISocketCallback;
 import com.skyware.sdk.callback.TCPCallback;
 import com.skyware.sdk.consts.ErrorConst;
+import com.skyware.sdk.consts.SDKConst;
 import com.skyware.sdk.consts.SocketConst;
 import com.skyware.sdk.exception.SkySocketCloseByRemoteException;
 import com.skyware.sdk.exception.SkySocketUnstartedException;
@@ -26,6 +26,7 @@ import com.skyware.sdk.packet.InPacket;
 import com.skyware.sdk.packet.OutPacket;
 import com.skyware.sdk.socket.IOHandler;
 import com.skyware.sdk.socket.TCPConnector;
+import com.skyware.sdk.thread.ThreadPoolManager;
 
 public class TCPCommunication extends SocketCommunication{
 
@@ -40,14 +41,6 @@ public class TCPCommunication extends SocketCommunication{
 	 */
 	private ConcurrentMap<Long, IOHandler> mHandlerTemp;
 
-	/**
-	 * 处理Socket连接线程的线程池
-	 * 目前的网络通信采用TPC模型（一个连接一线程处理），包括接收线程，心跳
-	 */
-	private ScheduledThreadPoolExecutor mThreadPool;
-
-    
-	
 	
 	public TCPCommunication(INetCallback netCallback){
 		super();
@@ -56,7 +49,9 @@ public class TCPCommunication extends SocketCommunication{
 		mHandlerPersist = new ConcurrentHashMap<Long, IOHandler>();
 		mHandlerTemp = new ConcurrentHashMap<Long, IOHandler>();
 		
-		mThreadPool = new ScheduledThreadPoolExecutor(5);
+		//目前的网络通信采用TPC模型（一个连接一线程处理），包括接收线程，心跳
+//		mThreadPool = new ScheduledThreadPoolExecutor(5);
+		ThreadPoolManager.getInstance().addCoreThread(SDKConst.THREAD_TCP_MAX_NUM);
 		
 		setNetCallback(netCallback);
 		
@@ -75,11 +70,11 @@ public class TCPCommunication extends SocketCommunication{
 		}
 		
 		//提交任务
-		newHandler.setFuture(mThreadPool.submit(newHandler));
+		newHandler.setFuture(ThreadPoolManager.getInstance().getThreadPool().submit(newHandler));
 		
 		return newHandler;
 	}
-	
+
 	
 	public boolean stopTCPTask(long mac) {
 		IOHandler handlerStop =  mHandlerTemp.get(mac);
@@ -234,7 +229,7 @@ public class TCPCommunication extends SocketCommunication{
 	@Override
 	public boolean isWorking() {
 		
-		return mThreadPool.getActiveCount() > 0;
+		return ThreadPoolManager.getInstance().getThreadPool().getActiveCount() > 0;
 	}
 	
 	@Override
@@ -246,8 +241,8 @@ public class TCPCommunication extends SocketCommunication{
 		mHandlerPersist = null;
 		mHandlerTemp = null;
 
-		mThreadPool.shutdownNow();
-		mThreadPool = null;
+//		mThreadPool.shutdownNow();
+//		mThreadPool = null;
 		
 		mSocketCallback = null;
 		setNetCallback(null);
@@ -308,6 +303,14 @@ public class TCPCommunication extends SocketCommunication{
 		}
 	}
 
+
+	@Override
+	public void onSendFinished(OutPacket packet) {
+		if (mNetCallback != null){
+			mNetCallback.onSendTCPFinished(packet);
+		}
+	}
+	
 	@Override
 	public void onCloseFinished(IOHandler h) {
 		if (mNetCallback != null){
@@ -368,7 +371,7 @@ public class TCPCommunication extends SocketCommunication{
 			super(targetAddress, socketCallback, mac);
 			isPersist = new AtomicBoolean(false);
 			sendQueue = new ConcurrentLinkedQueue<OutPacket>();
-			maxReconnectTimes = new AtomicInteger(SocketConst.BIO_TCP_MAX_RECONNECT_TIMES); 
+			maxReconnectTimes = new AtomicInteger(SocketConst.RETRY_TIMES_TCP_CONNECT); 
 		}
 		
 		@Override
@@ -463,6 +466,8 @@ public class TCPCommunication extends SocketCommunication{
 		}
 
 	}
+
+
 
 
 }

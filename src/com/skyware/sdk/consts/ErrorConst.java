@@ -8,6 +8,8 @@ public enum ErrorConst {
 	EADD_FIELD_ILLEGAL,
 	EDEL_NOTEXIST,
 	EUNKNOWN,
+	EWIFI_NOTCONNECT, 		//未连接wifi
+	
 	ESOCK_NIO_CHANNELCLOSE_BY_OTHERTHREAD, 	//AsynchronousCloseException 
 	ESOCK_NIO_INTERRUPT_BY_OTHERTHREAD,		//ClosedByInterruptException
 	ESOCK_NIO_CHANNELCLOSE_OPER_ATTEMPT,	//ClosedChannelException

@@ -2,6 +2,7 @@ package com.skyware.sdk.manage;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.UnknownHostException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -24,9 +25,11 @@ import com.skyware.sdk.entity.CmdInfo;
 import com.skyware.sdk.packet.InPacket;
 import com.skyware.sdk.packet.OutPacket;
 import com.skyware.sdk.packet.entity.PacketEntity;
+import com.skyware.sdk.packet.entity.PacketHelper;
 import com.skyware.sdk.packet.entity.PacketEntity.DevStatus;
 import com.skyware.sdk.packet.entity.PacketEntity.PacketType;
-import com.skyware.sdk.util.PacketHelper;
+import com.skyware.sdk.packet.entity.ProtocolHelper;
+import com.skyware.sdk.util.ArrayUtil;
 
 public class NetworkManager {
 
@@ -100,7 +103,10 @@ public class NetworkManager {
 	private ConcurrentHashMap<Long, Integer> mDeviceProtocolMap;
 	
 	
-	
+	private void cleanDeviceMap() {
+		mDeviceAddrMap.clear();
+		mDeviceProtocolMap.clear();
+	}
 	
 	/**
 	 *	初始化资源
@@ -114,6 +120,10 @@ public class NetworkManager {
 		mUdpComm = new UDPCommunication(mNetCallback);
 		
 		registNetworkReceiver();
+		
+		if (SkySDK.getConfig().isApMode()) {
+			initApInfo();
+		}
 	}
 	
 	/**
@@ -132,17 +142,26 @@ public class NetworkManager {
 		unregistNetworkReceiver();
 	}
 	
+	private void initApInfo() {
+		try {
+			mDeviceAddrMap.put(SDKConst.AP_MAC_LONG, 
+					InetAddress.getByName(SDKConst.PROTOCOL_GREEN_WIFI_AP_IP));
+			mDeviceProtocolMap.put(SDKConst.AP_MAC_LONG, SDKConst.PROTOCOL_GREEN);
+		} catch (UnknownHostException e) {
+			e.printStackTrace();
+		}		
+	}
+	
 	/**
 	 *	发送和接收广播
-	 *
 	 */
 	public boolean startBroadcaster() {
+		
 		return mUdpComm.startReceiverThread() &&
 				mUdpComm.startBroadcasterThread(6000);
 	}
 	
 	/**
-	 * 
 	 *	停止发送和接受广播
 	 */
 	public void stopBroadcaster() {
@@ -164,16 +183,16 @@ public class NetworkManager {
 		if (targetIp == null || targetProtocol == SDKConst.PROTOCOL_UNKNOWN) {
 			return false;
 		}
-		InetSocketAddress targetAddr = getSocketAddr(targetIp, targetProtocol);
+		InetSocketAddress targetAddr = ProtocolHelper.getSocketAddr(targetIp, targetProtocol);
 		
-		switch (targetProtocol) {
-		case SDKConst.PROTOCOL_LIERDA:
+		if (ArrayUtil.contains(SDKConst.PROTOCOL_TCP_SET, targetProtocol)){
 			return mTcpComm.startNewTCPTask(deviceMac, targetAddr, isPersist) != null;
-		case SDKConst.PROTOCOL_BROADLINK:
+		} else if (ArrayUtil.contains(SDKConst.PROTOCOL_UDP_SET, targetProtocol)) {
 			return mUdpComm.startNewUdpKeepAlive(deviceMac, targetAddr);
 		}
 		return false;
 	}
+	
 	
 	/**
 	 *	断开已有连接
@@ -183,10 +202,10 @@ public class NetworkManager {
 	 */
 	public boolean stopConnect(long deviceMac) {
 		int targetProtocol = mDeviceProtocolMap.get(deviceMac);
-		switch (targetProtocol) {
-		case SDKConst.PROTOCOL_LIERDA:
+		
+		if (ArrayUtil.contains(SDKConst.PROTOCOL_TCP_SET, targetProtocol)){
 			return mTcpComm.stopTCPTask(deviceMac);
-		case SDKConst.PROTOCOL_BROADLINK:
+		} else if (ArrayUtil.contains(SDKConst.PROTOCOL_UDP_SET, targetProtocol)) {
 			return mUdpComm.stopUdpKeepAlive(deviceMac);
 		}
 		return false;
@@ -195,8 +214,6 @@ public class NetworkManager {
 	/**
 	 *	断开所有已有连接
 	 *
-	 *	@param deviceMac
-	 *	@return
 	 */
 	public boolean stopAllConnects() {
 		return mTcpComm.stopAllTCPTask();
@@ -220,15 +237,19 @@ public class NetworkManager {
 		OutPacket packet = null;
 		switch (type) {
 		case DEVCOMMAND:
-			packet = PacketHelper.getDevCmdPacket(sn, cmd.wrapDevData(targetProtocol), targetProtocol);
+//DEBUG	 	packet = PacketHelper.getDevCmdPacket(sn, cmd.wrapDevData(targetProtocol), deviceMac, targetProtocol);
+			packet = PacketHelper.getDevCmdPacket(sn, cmd.getData(), deviceMac, targetProtocol);
 			break;
 			//TODO 其他Packet
+		case DEVCHECK:
+			packet = PacketHelper.getDevCheckPacket(sn, deviceMac, targetProtocol);
+			break;
 		default:
 			break;
 		}
 		
 		if (packet != null) {
-			packet.setTargetAddr(getSocketAddr(targetIp, targetProtocol));
+			packet.setTargetAddr(ProtocolHelper.getSocketAddr(targetIp, targetProtocol));
 			packet.setSendTime(System.currentTimeMillis());
 			packet.setTargetMac(deviceMac);
 			if (isPersist) {
@@ -238,15 +259,12 @@ public class NetworkManager {
 			// 加入到发送缓存
 			addOutPacket(packet);
 			
-			switch (targetProtocol) {
-			case SDKConst.PROTOCOL_LIERDA:
+			if (ArrayUtil.contains(SDKConst.PROTOCOL_TCP_SET, targetProtocol)){
 				// TCP连接 异步发送
 				mTcpComm.sendPacketAsync(packet);
-				break;
-			case SDKConst.PROTOCOL_BROADLINK:
+			} else if (ArrayUtil.contains(SDKConst.PROTOCOL_UDP_SET, targetProtocol)) {
 				// UDP 异步发送
 				mUdpComm.sendPacketAsync(packet);
-				break;
 			}
 		}
 		
@@ -268,51 +286,7 @@ public class NetworkManager {
 		return mTcpComm.setTCPPersist(deviceMac, false);
 	}
 	
-	
-	/**
-	 *	根据协议进行端口指定
-	 */
-	private InetSocketAddress getSocketAddr(InetAddress targetIp, int targetProtocol) {
-		InetSocketAddress targetAddr = null;
-		switch (targetProtocol) {
-		case SDKConst.PROTOCOL_LIERDA:
-			targetAddr = new InetSocketAddress(targetIp, 
-					SocketConst.PORT_TCP_REMOTE[SDKConst.PROTOCOL_LIERDA]);
-		break;
-		case SDKConst.PROTOCOL_BROADLINK:
-			targetAddr = new InetSocketAddress(targetIp, 
-					SocketConst.PORT_UDP_REMOTE[SDKConst.PROTOCOL_BROADLINK]);
-		break;
-		}
-		return targetAddr;
-	}
-	
-	/**
-	 *	根据地址端口确定协议
-	 */
-	private int getProtocolWithRemoteUDPAddr(InetSocketAddress remoteAddr) {
-		int remotePort = remoteAddr.getPort();
-		
-		for (int protocol = 0; protocol < SDKConst.PROTOCOL_COUNT; protocol++) 
-			if (remotePort == SocketConst.PORT_UDP_REMOTE[protocol]) 
-				return protocol;
-			
-		return SDKConst.PROTOCOL_UNKNOWN;
-	}
-	
-	/**
-	 *	根据地址端口确定协议
-	 */
-	private int getProtocolWithRemoteTCPAddr(InetSocketAddress remoteAddr) {
-		int remotePort = remoteAddr.getPort();
-		
-		for (int protocol = 0; protocol < SDKConst.PROTOCOL_COUNT; protocol++) 
-			if (remotePort == SocketConst.PORT_TCP_REMOTE[protocol]) 
-				return protocol;
-			
-		return SDKConst.PROTOCOL_UNKNOWN;
-	}
-	
+
 	
 	/**
 	 *	网络层回调
@@ -346,38 +320,57 @@ public class NetworkManager {
 		public void onReceiveUDP(InPacket packet) {
 			if (mBizCallback != null) {
 	
-				int protocol = getProtocolWithRemoteUDPAddr(packet.getSourceAddr());
+				int protocol = ProtocolHelper.getProtocolWithPort(packet.getSourceAddr().getPort());
 //				if (protocol != SDKConst.PROTOCOL_UNKNOWN) {
 //					packet.setProtocolType(protocol);
 //				}
+				//解析UDP的sn和Type
+				int sn = PacketHelper.resolvePacketSn(packet, protocol);
+				if (sn >= 0) {
+					packet.setSn(sn);
+				}
 				PacketType type = PacketHelper.resolvePacketType(packet, protocol);
 				
 				switch (type) {
 				case DEVFIND_ACK:
 					PacketEntity.DevFind.Ack ack = PacketHelper.resolveDevFindAck(packet, protocol);
-					if (mDeviceAddrMap.containsKey(ack.getMac()) && mDeviceAddrMap.get(ack.getMac()) != null) {
-//						String oldIp = mDeviceAddrMap.get(ack.getMac()).toString().substring(1);
-						InetAddress oldIp = mDeviceAddrMap.get(ack.getMac());
-						//如果IP变更，则更新Map
-//						if ( !oldIp.equals(ack.getIp()) ) {
-						if ( !oldIp.equals(packet.getSourceAddr()) ) {
-							mDeviceAddrMap.remove(ack.getMac());
+					if (mDeviceAddrMap!=null && ack!=null) {
+						if (mDeviceAddrMap.containsKey(ack.getMac()) && mDeviceAddrMap.get(ack.getMac()) != null) {
+	//						String oldIp = mDeviceAddrMap.get(ack.getMac()).toString().substring(1);
+							InetAddress oldIp = mDeviceAddrMap.get(ack.getMac());
+							//如果IP变更，则更新Map
+	//						if ( !oldIp.equals(ack.getIp()) ) {
+							if ( !oldIp.equals(packet.getSourceAddr()) ) {
+								mDeviceAddrMap.remove(ack.getMac());
+								mDeviceAddrMap.put(ack.getMac(), packet.getSourceAddr().getAddress());
+							}
+							
+						} else {	//发现新设备
 							mDeviceAddrMap.put(ack.getMac(), packet.getSourceAddr().getAddress());
+							mDeviceProtocolMap.put(ack.getMac(), protocol);
+							
+							//TODO 设备类型的判断应该由协议增加一个字段来判断
+							mBizCallback.onDiscoverNewDevice(ack.getMac(), packet.getSourceAddr().getAddress().toString().substring(1), 
+									protocol, SDKConst.PROTOCOL_DEV_TYPE[protocol]);
 						}
-						
-					} else {	//发现新设备
-						mDeviceAddrMap.put(ack.getMac(), packet.getSourceAddr().getAddress());
-						mDeviceProtocolMap.put(ack.getMac(), protocol);
-						
-						mBizCallback.onDiscoverNewDevice(ack.getMac(), packet.getSourceAddr().getAddress().toString().substring(1));
 					}
 					break;
 				case DEVCOMMAND_ACK:
+					OutPacket oldPacket = findAndDelSourcePacket(packet.getSn());
+					if (oldPacket != null) {
+						mBizCallback.onSendCmdSuccess(oldPacket.getTargetMac(), oldPacket.getSn());
 					
+						//博联插座特殊逻辑：命令ack即为状态上报
+						DevStatus devStatus1 = PacketHelper.resolveDevStatPacket(packet, protocol);
+						mBizCallback.onRecvDevStatus(devStatus1);
+					}
 					break;
 				case DEVSTATUS:
-					
+					DevStatus devStatus = PacketHelper.resolveDevStatPacket(packet, protocol);
+					mBizCallback.onRecvDevStatus(devStatus);
+					//TODO 发送ACK
 					break;
+
 				default:
 					
 					break;
@@ -390,7 +383,7 @@ public class NetworkManager {
 		@Override
 		public void onReceiveTCP(InPacket packet) {
 			if (mBizCallback != null) {
-				int protocol = getProtocolWithRemoteTCPAddr(packet.getSourceAddr());
+				int protocol = ProtocolHelper.getProtocolWithPort(packet.getSourceAddr().getPort());
 				//解析TCP的sn和Type
 				int sn = PacketHelper.resolvePacketSn(packet, protocol);
 				if (sn >= 0) {
@@ -410,7 +403,7 @@ public class NetworkManager {
 						
 						OutPacket oldPacket = findAndDelSourcePacket(packet.getSn());
 						if (oldPacket != null) {
-							mBizCallback.onSendTCPPacketSuccess(oldPacket);
+							mBizCallback.onSendCmdSuccess(oldPacket.getTargetMac(), oldPacket.getSn());
 						}
 						break;
 					case DEVSTATUS:
@@ -444,16 +437,20 @@ public class NetworkManager {
 		}
 		
 		@Override
-		public void onSendFinished(OutPacket packet) {
-			// TODO Auto-generated method stub
-			
+		public void onSendTCPFinished(OutPacket packet) {
+			mBizCallback.onSendTCPPacket(packet);	//for debug
 		}
 
+		@Override
+		public void onSendUDPFinished(OutPacket packet) {
+//			mBizCallback.onSendTCPPacket(packet);	//for debug
+		}
+		
 		@Override
 		public void onSendError(OutPacket packet, ErrorConst errType,
 				String errMsg) {
 			if (mBizCallback != null) {
-				mBizCallback.onSendTCPPacketError(errType, errMsg, packet);
+				mBizCallback.onSendCmdError(packet.getTargetMac(), packet.getSn(), errType, errMsg);
 			}
 		}
 
@@ -522,13 +519,16 @@ public class NetworkManager {
 //	                Log.e("WYF", "connect state: " + state);   
 	                switch (state){
 	                case CONNECTED:
-	                	startBroadcaster();
-	                	
+	                	if (SkySDK.getConfig().isApMode() == false) {
+	                		startBroadcaster();
+						}
 	                	break;
 	                case DISCONNECTED:
-	                	stopBroadcaster();
+	                	if (SkySDK.getConfig().isApMode() == false) {
+	                		stopBroadcaster();
+						}
 	                	stopAllConnects();
-	                	
+	                	cleanDeviceMap();
 	                	break;
 					default:
 						break;
@@ -539,4 +539,5 @@ public class NetworkManager {
 	        
 	    }
 	}
+
 }

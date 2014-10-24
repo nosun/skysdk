@@ -1,33 +1,36 @@
 package com.skyware.sdk.entity;
 
-import com.skyware.sdk.consts.SDKConst;
-
-public class CmdInfo {
+public abstract class CmdInfo {
 
 	private DevData data;
+	private Class<?> clazz;
+
 	
-	public CmdInfo() {
-		data = new DevData();
+	public DevData getData() {
+		return data;
 	}
+	public void setData(DevData data) {
+		this.data = data;
+	}
+	public Class<?> getClazz() {
+		return clazz;
+	}
+	public void setClazz(Class<?> clazz) {
+		this.clazz = clazz;
+	}
+
 	
-	public void setPowerOn() {
-		data.setPower(DevData.POWER_ON);
-	}
-	
-	public void setPowerOff() {
-		data.setPower(DevData.POWER_OFF);
-	}
-	
-	public DevData wrapDevData(int protocol) {
-		switch (protocol) {
-		case SDKConst.PROTOCOL_LIERDA:
-			return new LierdaDevData(data);
-		case SDKConst.PROTOCOL_BROADLINK:
-			return new BroadlinkDevData(data);
-		default:
-			return null;
-		}
-	}
+//	public DevData wrapDevData(int protocol) {
+//		switch (protocol) {
+//		case SDKConst.PROTOCOL_LIERDA:
+////			return new DevDataLierda(data);
+//			return new DevDataHezhong(data);
+//		case SDKConst.PROTOCOL_BROADLINK:
+//			return new DevDataBroadlink(data);
+//		default:
+//			return null;
+//		}
+//	}
 	
 	
 	

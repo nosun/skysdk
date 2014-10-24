@@ -11,12 +11,14 @@ import java.net.SocketTimeoutException;
 import android.util.Log;
 
 import com.skyware.sdk.callback.ISocketCallback;
+import com.skyware.sdk.consts.SDKConst;
 import com.skyware.sdk.consts.SocketConst;
 import com.skyware.sdk.exception.SkySocketCloseByRemoteException;
 import com.skyware.sdk.exception.SkySocketUnstartedException;
 import com.skyware.sdk.packet.InPacket;
 import com.skyware.sdk.packet.OutPacket;
-import com.skyware.sdk.util.FrameHelper;
+import com.skyware.sdk.packet.entity.FrameHelper;
+import com.skyware.sdk.packet.entity.ProtocolHelper;
 
 public abstract class TCPConnector extends BIOHandler{
 
@@ -95,7 +97,7 @@ public abstract class TCPConnector extends BIOHandler{
 			// 设置read超时时间，超时则报出InterruptedIOException异常。0代表永远阻塞
 //			mSocket.setSoTimeout(readTimeout);	//NOTICE: 改到read之前设置
 			// 三次握手，NOTICE:这里会阻塞，默认超时
-			mSocket.connect(mTargetAddress, SocketConst.BIO_TIMEOUT_TCP_CONNECT);
+			mSocket.connect(mTargetAddress, SocketConst.TIMEOUT_TCP_CONNECT);
 			Log.e(this.getClass().getSimpleName(), "TCP connect! Remote ip: " + mSocket.getRemoteSocketAddress()
 					+ " ,Local ip: " + mSocket.getLocalSocketAddress());
 			// 获取Socket IO流
@@ -130,8 +132,12 @@ public abstract class TCPConnector extends BIOHandler{
 			}
 			mSendMsgSize = packet.getContent().length;
 			System.arraycopy(packet.getContent(), 0, mSendBuf, 0, mSendMsgSize);
+			int protocol = packet.getProtocolType();
+			if (protocol == SDKConst.PROTOCOL_UNKNOWN) {
+				return false;
+			}
 			//成帧
-			mSendMsgSize = FrameHelper.frameMsg(mSendBuf, mSendMsgSize);
+			mSendMsgSize = FrameHelper.frameMsg(mSendBuf, mSendMsgSize, protocol);
 			//发送
 			outputStream.write(mSendBuf, 0, mSendMsgSize);
 			outputStream.flush();//强制输出到socket文件，不驻留内存缓冲区
@@ -168,8 +174,10 @@ public abstract class TCPConnector extends BIOHandler{
 			}
 			
 			Log.e(this.getClass().getSimpleName(), "start readStream!");
+			
+			int protocol = ProtocolHelper.getProtocolWithPort(mSocket.getPort());
 			//IO读 + 解帧
-			mRecvMsgSize = FrameHelper.ReframeMsg(mRecvBuf, inputStream);
+			mRecvMsgSize = FrameHelper.ReframeMsg(mRecvBuf, inputStream, protocol);
 			
 //			Log.e(this.getClass().getSimpleName(), "stop readStream!");
 			// 判断TCP连接是否已经断开

@@ -74,12 +74,20 @@ public interface INetCallback {
 	void onReceiveUDPError(long mac, ErrorConst errType, String errMsg);
 
 	/**
-	 * 发送包完成
+	 * 发送TCP包完成
 	 * 
 	 * @param packet
 	 *            发送的包
 	 */
-	void onSendFinished(OutPacket packet);
+	void onSendTCPFinished(OutPacket packet);
+
+	/**
+	 * 发送UDP包完成
+	 * 
+	 * @param packet
+	 *            发送的包
+	 */
+	void onSendUDPFinished(OutPacket packet);
 
 	/**
 	 * 发送包错误
@@ -97,5 +105,6 @@ public interface INetCallback {
 	 * @param mac
 	 */
 	void onCloseTCP(long mac);
+
 
 }

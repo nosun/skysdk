@@ -2,6 +2,7 @@ package com.skyware.sdk.socket;
 
 import java.io.IOException;
 import java.io.InterruptedIOException;
+import java.net.BindException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetSocketAddress;
@@ -37,6 +38,13 @@ public abstract class UDPHandler extends BIOHandler{
 		this.mSocketCallback = callback;
 	}
 	
+	public int getLocalBindPort(){
+		return mLocalAddress.getPort();
+	}
+	public void setLocalBindPort(int port){
+		this.mLocalAddress = new InetSocketAddress(port);
+	}
+	
 	/**
 	 * 获取当前read超时时间
 	 * @return int 当前超时时间
@@ -57,12 +65,14 @@ public abstract class UDPHandler extends BIOHandler{
 	
 	/**
 	 * 启动连接
+	 * @throws SocketException 
 	 */
-	public boolean start() {
+	public boolean start() throws SocketException {
 		try {
 			if(!super.start()){
 				return false;
 			}
+//			Log.e(this.getClass().getSimpleName(), "Bind port: "+ mLocalAddress.getPort());
 			// 建立UDP socket，绑定本地监听端口
 			mUDPSocket = new DatagramSocket(mLocalAddress);
 			// 设置read超时时间，超时则报出InterruptedIOException异常。0代表永远阻塞
@@ -79,6 +89,12 @@ public abstract class UDPHandler extends BIOHandler{
 			
 			Log.e(this.getClass().getSimpleName(), "start!");
 			return true;
+		} catch (BindException e) {
+			e.printStackTrace();
+			throw e;
+		} catch (SocketException e) {
+			e.printStackTrace();
+			throw e;
 		} catch (Exception e) {
 			e.printStackTrace();
 			mSocketCallback.onStartError(this, e);
@@ -89,9 +105,10 @@ public abstract class UDPHandler extends BIOHandler{
 
 	/**
 	 * 发送UDP广播
+	 * @throws IOException 
 	 */
 	@Override
-	public boolean send(OutPacket packet) {
+	public boolean send(OutPacket packet) throws IOException {
 		try {
 			if (!isStarted()) {
 				throw new SkySocketUnstartedException("UDP broadcast socket didn't start yet!");
@@ -105,13 +122,16 @@ public abstract class UDPHandler extends BIOHandler{
 			mUDPSocket.send(mUDPSendPacket);
 			
 //			Log.e(this.getClass().getSimpleName(), "UDP send data lenth:" + mSendMsgSize);
-			Log.e(this.getClass().getSimpleName(), "UDP send data content:" + new String(packet.getContent() ,charset));
+			Log.d(this.getClass().getSimpleName(), "UDP send data content:" + new String(packet.getContent() ,charset));
 			
 			mSocketCallback.onSendFinished(packet);
 			
-//			Log.e(this.getClass().getSimpleName(),"UDP already send!");
+//			Log.d(this.getClass().getSimpleName(),"UDP send!");
 			
 			return true;
+		} catch (SkySocketUnstartedException e){
+			e.printStackTrace();
+			throw e;
 		} catch (Exception e) {
 			e.printStackTrace();
 			mSocketCallback.onSendError(e, packet);
@@ -147,10 +167,12 @@ public abstract class UDPHandler extends BIOHandler{
 			System.arraycopy(mUDPRecvPacket.getData(), 0, content, 0, mRecvMsgSize);
 			packet.setContent(content);
 					
-			Log.e(this.getClass().getSimpleName(), "UDP packet received, msg length :" + mRecvMsgSize + "msg content :" + new String(content, charset));
+			Log.d(this.getClass().getSimpleName(), "UDP packet received, msg length :" + mRecvMsgSize + "msg content :" + new String(content, charset));
 			
 			//上报收到的packet
 			mSocketCallback.onReceive(packet);
+			
+//			Log.e(this.getClass().getSimpleName(), "UDP received!");
 //			reset();		
 			return true;
 		} catch (SkySocketUnstartedException e){

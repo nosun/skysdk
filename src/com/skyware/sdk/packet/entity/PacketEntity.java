@@ -13,11 +13,13 @@ public abstract class PacketEntity {
 	public static enum PacketType{
 		DEVFIND,		//广播
 		DEVCOMMAND,		//指令
+		DEVCHECK,		//状态查询
 		HEARTBEAT,		//心跳
 		DEVSTATUS,		//设备状态
 		
 		DEVFIND_ACK,	//广播回复
 		DEVCOMMAND_ACK,	//指令回复
+		DEVCHECK_ACK,	//状态查询回复
 		HEARTBEAT_ACK,	//心跳回复
 		DEVSTATUS_ACK,	//状态回复
 		
@@ -36,27 +38,42 @@ public abstract class PacketEntity {
 	
 	public abstract static class DevFind implements PacketSend{
 		
+		public DevFind() {
+		}
+		
 		@Override
 		public PacketType getPacketType() {
 			return PacketType.DEVFIND;
 		}
 		
 		public abstract static class Ack implements PacketRecv{
-			protected long mac;
-			protected String ip;
+			private long mac;
+//			protected String ip;
 			
-			public void setMac(long mac){
+			public Ack() {
+				this.mac = -1;
+			}
+//			public Ack(long mac) {
+//				this.mac = mac;
+//				this.ip = ip;
+//			}
+			
+			public boolean setMac(long mac){
+				if (mac < 0 || mac > 0xFFFFFFFFFFFFL) {
+					return false;
+				}
 				this.mac = mac;
+				return true;
 			}
 			public long getMac(){
 				return mac;
 			}
-			public void setIp(String ip){
-				this.ip = ip;
-			}
-			public String getIp(){
-				return ip;
-			}
+//			public void setIp(String ip){
+//				this.ip = ip;
+//			}
+//			public String getIp(){
+//				return ip;
+//			}
 			
 			@Override
 			public PacketType getPacketType() {
@@ -66,8 +83,17 @@ public abstract class PacketEntity {
 	}
 
 	public abstract static class DevCmd implements PacketSend{
-		protected int sn;
-		protected DevData data;	//设备参数实体类
+		private int sn;
+		private DevData data;	//设备参数实体类
+		
+		public DevCmd() {
+			this.sn = -1;
+			this.data = null;
+		}
+		public DevCmd(int sn, DevData data) {
+			this.data = data;
+			this.sn = sn;
+		}
 		
 		@Override
 		public PacketType getPacketType() {
@@ -87,8 +113,17 @@ public abstract class PacketEntity {
 		}
 		
 		public abstract static class Ack implements PacketRecv{
-			protected int sn;
-			protected int ret;
+			private int sn;
+			private int ret;
+			
+			public Ack() {
+				this.sn = -1;
+				this.ret = -1;
+			}
+//			public Ack(int sn, int ret) {
+//				this.sn = sn;
+//				this.ret = ret;
+//			}
 			
 			public int getSn() {
 				return sn;
@@ -109,8 +144,69 @@ public abstract class PacketEntity {
 		}
 	}
 	
+	public abstract static class DevCheck implements PacketSend{
+		private int sn;
+		
+		public DevCheck() {
+			this.sn = -1;
+		}
+		public DevCheck(int sn) {
+			this.sn = sn;
+		}
+		
+		@Override
+		public PacketType getPacketType() {
+			return PacketType.DEVCHECK;
+		}
+		public int getSn() {
+			return sn;
+		}
+		public void setSn(int sn) {
+			this.sn = sn;
+		}
+		
+		public abstract static class Ack implements PacketRecv{
+			private int sn;
+			private int ret;
+			
+			public Ack() {
+				this.sn = -1;
+				this.ret = -1;
+			}
+//			public Ack(int sn, int ret) {
+//				this.sn = sn;
+//				this.ret = ret;
+//			}
+			
+			public int getSn() {
+				return sn;
+			}
+			public void setSn(int sn) {
+				this.sn = sn;
+			}
+			public int getRet() {
+				return ret;
+			}
+			public void setRet(int ret) {
+				this.ret = ret;
+			}
+			@Override
+			public PacketType getPacketType() {
+				return PacketType.DEVCHECK_ACK;
+			}
+		}
+	}
+	
+	
 	public abstract static class HeartBeat implements PacketSend{
-		protected int sn;
+		private int sn;
+		
+		public HeartBeat() {
+			this.sn = -1;
+		}
+		public HeartBeat(int sn) {
+			this.sn = sn;
+		}
 		public int getSn() {
 			return sn;
 		}
@@ -124,6 +220,13 @@ public abstract class PacketEntity {
 		}
 		public abstract static class Ack implements PacketRecv{
 			protected int sn;
+			
+			public Ack() {
+				this.sn = -1;
+			}
+//			public Ack(int sn) {
+//				this.sn = sn;
+//			}
 			public int getSn() {
 				return sn;
 			}
@@ -138,20 +241,30 @@ public abstract class PacketEntity {
 	}
 	
 	public abstract static class DevStatus implements PacketRecv, IJsonEncoder{
-		protected int sn;
-		protected String mac;
-		protected DevData devData;	//设备参数实体类
+		private int sn;
+		private long mac;
+		private DevData devData;	//设备参数实体类
 		
+		public DevStatus() {
+			this.sn = -1;
+			this.mac = -1;
+			this.devData = null;
+		}
+//		public DevStatus(int sn, long mac, DevData devData) {
+//			this.sn = sn;
+//			this.mac = mac;
+//			this.devData = devData;
+//		}
 		public int getSn() {
 			return sn;
 		}
 		public void setSn(int sn) {
 			this.sn = sn;
 		}
-		public String getMac() {
+		public long getMac() {
 			return mac;
 		}
-		public void setMac(String mac) {
+		public void setMac(long mac) {
 			this.mac = mac;
 		}	
 		public DevData getDevData() {
@@ -167,6 +280,9 @@ public abstract class PacketEntity {
 		}
 		
 		public abstract static class Ack implements PacketSend{
+			//TODO 回复包未定义
+			public Ack() {
+			}
 			@Override
 			public PacketType getPacketType() {
 				return PacketType.DEVSTATUS_ACK;

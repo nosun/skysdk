@@ -1,0 +1,395 @@
+<RelativeLayout xmlns:tools="http://schemas.android.com/tools"
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context="com.skyware.sdk.test.ui.TestActivity" >
+
+	<ScrollView
+	    android:id="@+id/sv_result"              
+		android:layout_width="fill_parent"    
+        android:layout_height="120dp"
+	    android:fadeScrollbars="false"
+	    android:scrollbarAlwaysDrawVerticalTrack="true"
+	    android:scrollbars="vertical" >
+	    
+	    <TextView 
+		    android:id="@+id/tv_result"              
+			android:layout_width="fill_parent"  
+	        android:layout_height="wrap_content"     
+	        android:textSize="12sp" 
+	        android:scrollbars="vertical" 
+	        android:text="请您将wifi模块同一个局域网下，app会自动发现模块"/> 
+	</ScrollView>
+	
+        
+    <RelativeLayout
+        android:id="@+id/layout_dev_airpurifier"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/sv_result"
+        android:layout_marginTop="10dp" >
+
+        <TextView
+            android:id="@+id/tv_dev_info"
+            android:layout_width="120dp"
+            android:layout_height="wrap_content"
+            android:text="dev_info" />
+
+        <TextView
+            android:id="@+id/tv_dev_filter_key"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentLeft="true"
+            android:layout_below="@+id/tv_dev_info"
+            android:text="滤网剩余:" />
+
+        <TextView
+            android:id="@+id/tv_dev_filter_value"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_toRightOf="@+id/tv_dev_filter_key"
+            android:layout_alignBaseline="@+id/tv_dev_filter_key"
+            android:text="   " />
+        
+        <TextView
+            android:id="@+id/tv_dev_filter_level_key"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+           	android:layout_toRightOf="@+id/tv_dev_filter_value"
+            android:layout_alignBaseline="@+id/tv_dev_filter_value"
+            android:text="剩余等级:" />
+
+        <TextView
+            android:id="@+id/tv_dev_filter_level_value"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_toRightOf="@+id/tv_dev_filter_level_key"
+            android:layout_alignBaseline="@+id/tv_dev_filter_level_key"
+            android:text="   " />
+        
+        <TextView
+            android:id="@+id/tv_dev_temp_key"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_toRightOf="@+id/tv_dev_filter_level_value"
+            android:layout_alignBaseline="@+id/tv_dev_filter_level_value"
+            android:text="温度:" />
+        
+        <TextView
+            android:id="@+id/tv_dev_temp_value"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_toRightOf="@+id/tv_dev_temp_key"
+            android:layout_alignBaseline="@+id/tv_dev_temp_key"
+            android:text="    " />
+        
+        <TextView
+            android:id="@+id/tv_dev_hum_key"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_toRightOf="@+id/tv_dev_temp_value"
+            android:layout_alignBaseline="@+id/tv_dev_temp_value"
+            android:text="湿度:" />
+        
+        <TextView
+            android:id="@+id/tv_dev_hum_value"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_toRightOf="@+id/tv_dev_hum_key"
+            android:layout_alignBaseline="@+id/tv_dev_hum_key"
+            android:text="   " />
+        
+        <TextView
+            android:id="@+id/tv_dev_pm_key"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@+id/tv_dev_filter_key"
+            android:text="PM值:  " />
+        
+        <TextView
+            android:id="@+id/tv_dev_pm_value"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_toRightOf="@+id/tv_dev_pm_key"
+            android:layout_alignBaseline="@+id/tv_dev_pm_key"
+            android:text="   " />
+        
+        <TextView
+            android:id="@+id/tv_dev_pm_level_key"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_toRightOf="@+id/tv_dev_pm_value"
+            android:layout_alignBaseline="@+id/tv_dev_pm_value"
+            android:text="PM等级:" />
+        
+        <TextView
+            android:id="@+id/tv_dev_pm_level_value"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_toRightOf="@+id/tv_dev_pm_level_key"
+            android:layout_alignBaseline="@+id/tv_dev_pm_level_key"
+            android:text="   " />
+        
+        <Button
+            android:id="@+id/btn_start"
+            android:layout_width="80dp"
+            android:layout_height="40dp"
+            android:layout_below="@+id/tv_dev_pm_key"
+            android:text="连接"
+            android:textSize="16sp" />
+
+        <Button
+            android:id="@+id/btn_stop"
+            android:layout_width="80dp"
+            android:layout_height="40dp"
+            android:layout_alignBaseline="@+id/btn_start"
+            android:layout_marginLeft="10dp"
+            android:layout_toRightOf="@+id/btn_start"
+            android:text="断开"
+            android:textSize="16sp" />
+
+        <RelativeLayout
+            android:id="@+id/layout_dev_switch"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:layout_below="@+id/btn_start"
+            android:layout_marginTop="3dp">
+
+            <Switch
+                android:id="@+id/switch_power"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="电源" />
+
+            <Switch
+                android:id="@+id/switch_child_lock"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignBaseline="@+id/switch_power"
+                android:layout_alignParentRight="true"
+                android:text="童锁" />
+
+            <Switch
+                android:id="@+id/switch_uv"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentLeft="true"
+                android:layout_below="@+id/switch_power"
+                android:text=" UV  " />
+
+            <Switch
+                android:id="@+id/switch_anion"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignBaseline="@+id/switch_uv"
+                android:layout_alignParentRight="true"
+                android:text="负离子" />
+
+        </RelativeLayout>
+
+        <com.skyware.sdk.test.ui.FlowRadioGroup
+            android:id="@+id/radioGroup_mode"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentLeft="true"
+            android:layout_below="@+id/layout_dev_switch"
+            android:layout_marginTop="5dp"
+            android:orientation="horizontal">
+
+            <TextView
+                android:id="@+id/tv_mode"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="模式" />
+
+            <RadioButton
+                android:id="@+id/radio_mode_manual"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:checked="true"
+                android:text="手动" />
+
+            <RadioButton
+                android:id="@+id/radio_mode_auto"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="自动" />
+
+            <RadioButton
+                android:id="@+id/radio_mode_sleep"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="睡眠" />
+        </com.skyware.sdk.test.ui.FlowRadioGroup>
+        
+        <com.skyware.sdk.test.ui.FlowRadioGroup
+            android:id="@+id/radioGroup_timer"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentLeft="true"
+            android:layout_below="@+id/radioGroup_mode"
+            android:orientation="horizontal">
+
+            <TextView
+                android:id="@+id/tv_timer"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="定时" />
+
+            <RadioButton
+                android:id="@+id/radio_timer1"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:checked="true"
+                android:text="1" />
+
+            <RadioButton
+                android:id="@+id/radio_timer2"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="2" />
+
+            <RadioButton
+                android:id="@+id/radio_timer3"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="3" />
+
+            <RadioButton
+                android:id="@+id/radio_timer4"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="4" />
+
+            <RadioButton
+                android:id="@+id/radio_timer5"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="5" />
+
+            <RadioButton
+                android:id="@+id/radio_timer6"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="6" />
+
+            <RadioButton
+                android:id="@+id/radio_timer7"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="7" />
+
+            <RadioButton
+                android:id="@+id/radio_timer8"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="8" />
+
+            <RadioButton
+                android:id="@+id/radio_timer9"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="9" />
+
+            <RadioButton
+                android:id="@+id/radio_timer10"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="10" />
+
+            <RadioButton
+                android:id="@+id/radio_timer11"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="11" />
+
+            <RadioButton
+                android:id="@+id/radio_timer12"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="12" />
+        </com.skyware.sdk.test.ui.FlowRadioGroup>
+
+        <com.skyware.sdk.test.ui.FlowRadioGroup
+            android:id="@+id/radioGroup_fanspeed"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentLeft="true"
+            android:layout_below="@+id/radioGroup_timer"
+            android:layout_marginTop="5dp"
+            android:orientation="horizontal" >
+
+            <TextView
+                android:id="@+id/tv_fanspeed"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="风速" />
+
+            <RadioButton
+                android:id="@+id/radio_fanspeed1"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:checked="true"
+                android:text="1" />
+
+            <RadioButton
+                android:id="@+id/radio_fanspeed2"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="2" />
+
+            <RadioButton
+                android:id="@+id/radio_fanspeed3"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="3" />
+
+            <RadioButton
+                android:id="@+id/radio_fanspeed4"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="4" />
+
+            <RadioButton
+                android:id="@+id/radio_fanspeed5"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="5" />
+        </com.skyware.sdk.test.ui.FlowRadioGroup>
+    </RelativeLayout>
+    
+    <RelativeLayout
+        android:id="@+id/layout_dev_plugin"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/layout_dev_airpurifier"
+        android:layout_marginTop="5dp" >
+
+        <TextView
+            android:id="@+id/tv_dev_info_plugin"
+            android:layout_width="120dp"
+            android:layout_height="wrap_content"
+            android:text="dev_info" />
+
+        <Button
+            android:id="@+id/btn_power_on_plugin"
+            android:layout_width="80dp"
+            android:layout_height="40dp"
+            android:layout_below="@+id/tv_dev_info_plugin"
+            android:text="开"
+            android:textSize="16sp" />
+
+        <Button
+            android:id="@+id/btn_power_off_plugin"
+            android:layout_width="80dp"
+            android:layout_height="40dp"
+            android:layout_alignBaseline="@+id/btn_power_on_plugin"
+            android:layout_marginLeft="10dp"
+            android:layout_toRightOf="@+id/btn_power_on_plugin"
+            android:text="关"
+            android:textSize="16sp" />
+    </RelativeLayout>
+    
+    
+    
+</RelativeLayout>

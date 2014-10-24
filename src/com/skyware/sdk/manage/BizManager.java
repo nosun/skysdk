@@ -17,11 +17,13 @@ import com.skyware.sdk.consts.ErrorConst;
 import com.skyware.sdk.consts.SDKConst;
 import com.skyware.sdk.entity.CmdInfo;
 import com.skyware.sdk.entity.DeviceInfo;
+import com.skyware.sdk.entity.DeviceInfo.DevType;
 import com.skyware.sdk.entity.ErrorInfo;
 import com.skyware.sdk.packet.InPacket;
 import com.skyware.sdk.packet.OutPacket;
 import com.skyware.sdk.packet.entity.PacketEntity.DevStatus;
 import com.skyware.sdk.packet.entity.PacketEntity.PacketType;
+import com.skyware.sdk.thread.ThreadPoolManager;
 import com.skyware.sdk.util.ConvertUtil;
 import com.skyware.sdk.util.NetworkHelper;
 
@@ -53,6 +55,8 @@ public class BizManager {
 	
 	private NetworkManager mNetworkManager;
 	
+	private IBizCallback mBizCallback;
+	
 	/**
 	 *	初始化资源
 	 *
@@ -63,7 +67,9 @@ public class BizManager {
 		
 		mDeviceMap = new ConcurrentHashMap<Long, DeviceInfo>();
 		
-		mNetworkManager = new NetworkManager(new MyBizCallback());
+		mBizCallback = new MyBizCallback();
+		
+		mNetworkManager = new NetworkManager(mBizCallback);
 	}
 	
 	/**
@@ -78,6 +84,7 @@ public class BizManager {
 		mNetworkManager.finallize();
 		mNetworkManager = null;
 		
+		ThreadPoolManager.getInstance().finallize();
 		mContext = null;
 	}
 	
@@ -104,13 +111,16 @@ public class BizManager {
 	
 	/**
 	 *	连接设备
-	 *
 	 */
 	public void startConnectToDevice(long mac) {
 		Log.e(this.getClass().getSimpleName(), "startConnectToDevice()! mac: " + mac);
 //		try {
 		if (NetworkHelper.isWifiConnected(getContext())) {
-			mNetworkManager.startNewConnect(mac, true);
+			if(!mNetworkManager.startNewConnect(mac, true)){
+				//TODO 连接失败上报
+			}
+		} else {
+			mBizCallback.onConnectDeviceError(mac, ErrorConst.EWIFI_NOTCONNECT, "未连接wifi");
 		}
 //			//发送查询指令
 //			OutPacket packet = PacketHelper.getDevCheckPacket(mNetworkManager.getSn());
@@ -124,13 +134,16 @@ public class BizManager {
 	 *	断开连接
 	 *
 	 */
-	public void stopConnectToDevice(long mac) {
+	public boolean stopConnectToDevice(long mac) {
 		Log.e(this.getClass().getSimpleName(), "stopConnectToDevice()! mac: " + mac);
 		
 		if (NetworkHelper.isWifiConnected(getContext())) {
-			mNetworkManager.stopConnect(mac);
+			return mNetworkManager.stopConnect(mac);
+		} else {
+			return false;
 		}
 	}
+	
 	
 	
 	/**
@@ -140,13 +153,30 @@ public class BizManager {
 		Log.e(this.getClass().getSimpleName(), "sendCmdToDevice()! mac: " + mac + ",cmd: " + cmd + ",sn: " + sn);
 		
 		if (NetworkHelper.isWifiConnected(getContext())) {
-			mNetworkManager.sendPacketToDevice(mac, PacketType.DEVCOMMAND, cmd, sn, true);
+			if(!mNetworkManager.sendPacketToDevice(mac, PacketType.DEVCOMMAND, cmd, sn, true)){
+				//TODO 发送失败上报（同步异常）
+			}
 		} else {
-			//否则走大循环
+			//TODO 否则走大循环
+			mBizCallback.onSendCmdError(mac, sn, ErrorConst.EWIFI_NOTCONNECT, "未连接wifi");
 		}
 	}
 	
-	
+	/**
+	 *	查询设备状态
+	 */
+	public void checkDeviceStatus(long mac, int sn) {
+		Log.e(this.getClass().getSimpleName(), "checkDeviceStatus()! mac: " + mac + ",sn: " + sn);
+		
+		if (NetworkHelper.isWifiConnected(getContext())) {
+			if(!mNetworkManager.sendPacketToDevice(mac, PacketType.DEVCHECK, null, sn, true)){
+				//TODO 发送失败上报（同步异常）
+			}
+		} else {
+			//TODO 否则走大循环
+			mBizCallback.onSendCmdError(mac, sn, ErrorConst.EWIFI_NOTCONNECT, "未连接wifi");
+		}
+	}
 	
 	/**
 	 *	业务层回调
@@ -155,76 +185,86 @@ public class BizManager {
 	 */
 	private class MyBizCallback implements IBizCallback{
 		@Override
+		public void onDiscoverNewDevice(long devMac, String deviceIp, int protocol, DevType devType) {
+			if (mUIHandler != null) {
+				DeviceInfo deviceInfo = new DeviceInfo();
+				deviceInfo.setIp(deviceIp);
+				deviceInfo.setMac(ConvertUtil.macLong2String(devMac));
+				deviceInfo.setProtocol(protocol);
+				deviceInfo.setDevType(devType);
+				//TODO 还有其他欲上报的信息
+				
+				//TODO 向服务器验证，注册该设备
+				
+				mDeviceMap.put(devMac, deviceInfo);
+				
+				mUIHandler.obtainMessage(SDKConst.MSG_DISCOVER_FIND_NEW, deviceInfo).sendToTarget();
+			}	
+		}
+		
+		@Override
 		public void onConnectCloudError(ErrorConst errType, String errMsg) {
 			// TODO Auto-generated method stub
 			
 		}
+		
 		@Override
-		public void onConnectDeviceSuccess(long deviceMac) {
+		public void onConnectDeviceSuccess(long devMac) {
 			if (mUIHandler != null) {
-				mUIHandler.obtainMessage(SDKConst.MSG_DEVICE_CONNECT, 1, -1, deviceMac).sendToTarget();
+				mUIHandler.obtainMessage(SDKConst.MSG_DEVICE_CONNECT_RESULT, 1, -1, devMac).sendToTarget();
 			}
 		}
 		@Override
-		public void onConnectDeviceError(long deviceMac, ErrorConst errType, String errMsg) {
+		public void onConnectDeviceError(long devMac, ErrorConst errType, String errMsg) {
 			if (mUIHandler != null) {
 				HashMap<String, Object> map = new HashMap<String, Object>();
 				ErrorInfo errInfo = new ErrorInfo();
 				errInfo.setErrType(errType);
 				errInfo.setErrStr(errMsg);
 				
-				map.put("KEY_MAC", deviceMac);
+				map.put("KEY_MAC", devMac);
 				map.put("KEY_ERR", errInfo);
-				mUIHandler.obtainMessage(SDKConst.MSG_DEVICE_CONNECT, 0, -1, map).sendToTarget();
+				mUIHandler.obtainMessage(SDKConst.MSG_DEVICE_CONNECT_RESULT, 0, -1, map).sendToTarget();
 			}
 		}
 		@Override
-		public void onDeviceDisconnected(long deviceMac, ErrorConst errType, String errMsg) {
+		public void onDeviceDisconnected(long devMac, ErrorConst errType, String errMsg) {
 			if (mUIHandler != null) {
 				HashMap<String, Object> map = new HashMap<String, Object>();
 				ErrorInfo errInfo = new ErrorInfo();
 				errInfo.setErrType(errType);
 				errInfo.setErrStr(errMsg);
 				
-				map.put("KEY_MAC", deviceMac);
+				map.put("KEY_MAC", devMac);
 				map.put("KEY_ERR", errInfo);
 				mUIHandler.obtainMessage(SDKConst.MSG_DEVICE_DISCONN, map).sendToTarget();
 			}
 		}
 		@Override
-		public void onRecvUDPPacket(InPacket packet) {
+		public void onSendCmdSuccess(long devMac, int sn) {
 			if (mUIHandler != null) {
-				String toShow = "";
-				toShow += packet.getSourceAddr();
-				toShow += " " + new String(packet.getContent(), Charset.forName("US-ASCII"));
-				mUIHandler.obtainMessage(SDKConst.MSG_BROADCAST_RECEIVE, toShow).sendToTarget();
+				mUIHandler.obtainMessage(SDKConst.MSG_DEVICE_CMD_ACK, sn, 1, devMac).sendToTarget();
 			}
 		}
 		@Override
-		public void onDiscoverNewDevice(long deviceMac, String deviceIp) {
+		public void onSendCmdError(long devMac, int sn, ErrorConst errType, String errMsg) {
 			if (mUIHandler != null) {
-				DeviceInfo deviceInfo = new DeviceInfo();
-				deviceInfo.setIp(deviceIp);
-				deviceInfo.setMac(ConvertUtil.macLong2String(deviceMac));
-				//TODO 还有其他欲上报的信息
+				HashMap<String, Object> map = new HashMap<String, Object>();
+				ErrorInfo errInfo = new ErrorInfo();
+				errInfo.setErrType(errType);
+				errInfo.setErrStr(errMsg);
 				
-				//TODO 向服务器验证，注册该设备
-				
-				mDeviceMap.put(deviceMac, deviceInfo);
-				
-				mUIHandler.obtainMessage(SDKConst.MSG_DISCOVER_FIND_NEW, deviceInfo).sendToTarget();
-			}	
+				map.put("KEY_MAC", devMac);
+				map.put("KEY_ERR", errInfo);
+				mUIHandler.obtainMessage(SDKConst.MSG_DEVICE_CMD_ACK, sn, 0, map).sendToTarget();
+			}
 		}
 		@Override
 		public void onRecvDevStatus(DevStatus devStatus) {
 			if (mUIHandler != null) {
 				try {
-					if (SDKConst.DEBUG_FLAG) {
-						mUIHandler.obtainMessage(SDKConst.MSG_DEVICE_STATUS_DEBUG, devStatus).sendToTarget();
-					} 
-					
-					mUIHandler.obtainMessage(SDKConst.MSG_DEVICE_STATUS, devStatus.jsonEncoder().toString()).sendToTarget();
-					
+					mUIHandler.obtainMessage(SDKConst.MSG_DEVICE_STATUS, devStatus).sendToTarget();
+					mUIHandler.obtainMessage(SDKConst.MSG_DEVICE_STATUS_JSON, devStatus.jsonEncoder().toString()).sendToTarget();
 				} catch (JSONException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
@@ -232,43 +272,44 @@ public class BizManager {
 			}	
 		}
 		@Override
-		public void onRecvTCPPacket(InPacket packet) {
-			
-		}
-		@Override
 		public void onRecvError(ErrorConst errType, String errMsg) {
 			// TODO Auto-generated method stub
 			
 		}
-		@Override
-		public void onSendTCPPacketSuccess(OutPacket packet) {
-			if (mUIHandler != null) {
-				if(packet.getType() == PacketType.DEVCOMMAND) {
-					mUIHandler.obtainMessage(SDKConst.MSG_DEVICE_CMD_ACK, packet.getSn(), 1, packet.getTargetMac()).sendToTarget();
-				}
-			}
-		}
-		@Override
-		public void onSendTCPPacketError(ErrorConst errType, String errMsg,
-				OutPacket packet) {
-			if (mUIHandler != null) {
-				if(packet.getType() == PacketType.DEVCOMMAND) {
-					
-					HashMap<String, Object> map = new HashMap<String, Object>();
-					ErrorInfo errInfo = new ErrorInfo();
-					errInfo.setErrType(errType);
-					errInfo.setErrStr(errMsg);
-					
-					map.put("KEY_MAC", packet.getTargetMac());
-					map.put("KEY_ERR", errInfo);
-					mUIHandler.obtainMessage(SDKConst.MSG_DEVICE_CMD_ACK, packet.getSn(), 0, map).sendToTarget();
-				}
-			}
-		}
+
 		@Override
 		public void onSDKError(ErrorConst errType, String errMsg) {
 			// TODO Auto-generated method stub
 			
+		}
+		@Override	@Deprecated
+		public void onRecvUDPPacket(InPacket packet) {
+			if (mUIHandler != null) {
+				String toShow = "";
+				toShow += packet.getSourceAddr();
+				toShow += " " + new String(packet.getContent(), Charset.forName("US-ASCII"));
+				mUIHandler.obtainMessage(SDKConst.MSG_DEBUG_BROADCAST_RECEIVE, toShow).sendToTarget();
+			}
+		}
+		@Override	@Deprecated
+		public void onRecvTCPPacket(InPacket packet) {
+			if (mUIHandler != null) {
+				String toShow = "";
+//				toShow += packet.getSourceAddr();
+				toShow += "Recv: ";
+				toShow += new String(packet.getContent(), Charset.forName("US-ASCII"));
+				mUIHandler.obtainMessage(SDKConst.MSG_DEBUG_TCP_RECEIVE, toShow).sendToTarget();
+			}
+		}
+		@Override	@Deprecated
+		public void onSendTCPPacket(OutPacket packet) {
+			if (mUIHandler != null) {
+				String toShow = "";
+//				toShow += packet.getSourceAddr();
+				toShow += "Send: ";
+				toShow += new String(packet.getContent(), Charset.forName("US-ASCII"));
+				mUIHandler.obtainMessage(SDKConst.MSG_DEBUG_TCP_SEND, toShow).sendToTarget();
+			}
 		}
 	}
 	

@@ -1,7 +1,7 @@
 package com.skyware.sdk.packet.entity;
 
-import static com.skyware.sdk.packet.entity.LierdaLegalHelper.checkRetValidate;
-import static com.skyware.sdk.packet.entity.LierdaLegalHelper.checkSnValidate;
+import static com.skyware.sdk.packet.entity.MooreLegalHelper.checkRetValidate;
+import static com.skyware.sdk.packet.entity.MooreLegalHelper.checkSnValidate;
 
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.Charset;
@@ -12,18 +12,19 @@ import org.json.JSONObject;
 
 import com.skyware.sdk.consts.SDKConst;
 import com.skyware.sdk.consts.SocketConst;
+import com.skyware.sdk.entity.DevData;
 import com.skyware.sdk.entity.IJsonDecoder;
 import com.skyware.sdk.entity.IJsonEncoder;
-import com.skyware.sdk.entity.LierdaDevData;
+import com.skyware.sdk.entity.biz.DevDataHezhong;
 import com.skyware.sdk.util.ConvertUtil;
 
-public class LierdaPacketEntity{
+public class MoorePacketEntity{
 	
 	public final static String cmdName = "cmd";
 	public final static String snName = "sn";
 	
 	public static int getMyProtocolType() {
-		return SDKConst.PROTOCOL_LIERDA;
+		return SDKConst.PROTOCOL_MOORE;
 	}
 
 	/**
@@ -31,6 +32,9 @@ public class LierdaPacketEntity{
 	 *	@author wangyf 2014-10-9
 	 */
 	public static class DevFind extends PacketEntity.DevFind{
+		
+		public DevFind() {
+		}
 		@Override
 		public int getProtocolType() {
 			return getMyProtocolType();
@@ -48,7 +52,20 @@ public class LierdaPacketEntity{
 		 * 广播包回复实体类
 		 */
 		public static class Ack extends PacketEntity.DevFind.Ack{
-
+			String ip;
+			
+			public Ack() {
+			}
+//			public Ack(long mac, String ip) {
+//				super(mac);
+//				this.ip = ip;
+//			}
+			public void setIp(String ip){
+				this.ip = ip;
+			}
+			public String getIp(){
+				return ip;
+			}
 			@Override
 			public int getProtocolType() {
 				return getMyProtocolType();
@@ -60,10 +77,10 @@ public class LierdaPacketEntity{
 							Charset.forName(SocketConst.CHARSET_BROADCAST_CONTENT))
 						.split(",");
 				ip = strSplit[0].trim();
-				if((mac = ConvertUtil.macString2Long(strSplit[1].trim())) == -1){
-					return false;
+				if(setMac(ConvertUtil.macString2Long(strSplit[1].trim()))){
+					return true;
 				}
-				return true;
+				return false;
 			}
 		}
 		
@@ -78,11 +95,14 @@ public class LierdaPacketEntity{
 	 */
 	public static class DevCmd extends PacketEntity.DevCmd 
 							implements IJsonEncoder{
-	
-		
 		public final static String cmdValue = "download";
 		public final static String dataName = "data";
 		
+		public DevCmd() {
+		}
+		public DevCmd(int sn, DevData data) {
+			super(sn, data);
+		}
 		@Override
 		public int getProtocolType() {
 			return getMyProtocolType();
@@ -100,7 +120,8 @@ public class LierdaPacketEntity{
 			obj.put(cmdName, cmdValue);
 			
 			if (getData() != null && getData().getDataCount() > 0) {
-				obj.put(dataName, ((LierdaDevData) getData()).mcuCoder());
+//				obj.put(dataName, ((DevDataLierda) getData()).mcuCoder());
+				obj.put(dataName, ((DevDataHezhong) getData()).mcuCoder());
 			} else if (getData() == null){
 //				obj.put(dataName, "");	//DevCheck
 			}
@@ -124,9 +145,14 @@ public class LierdaPacketEntity{
 		 */
 		public static class Ack extends PacketEntity.DevCmd.Ack 
 							implements IJsonDecoder{
-			
+
 			private final static String retName = "ret";
 			
+			public Ack() {
+			}
+//			public Ack(int sn, int ret) {
+//				super(sn, ret);
+//			}
 			@Override
 			public int getProtocolType() {
 				return getMyProtocolType();
@@ -171,10 +197,23 @@ public class LierdaPacketEntity{
 	 * 设备查询指令实体类
 	 * @author wangyf
 	 */
-	public static class DevCheck extends DevCmd{
+	public static class DevCheck extends PacketEntity.DevCheck{
 		//查询指令本质上就是没有data的指令
-		public DevCheck(){
-			setData(null);
+		public DevCheck() {
+		}
+		public DevCheck(int sn) {
+			super(sn);
+		}
+		@Override
+		public int getProtocolType() {
+			// TODO Auto-generated method stub
+			return 0;
+		}
+
+		@Override
+		public byte[] byteEncoder() {
+			// TODO Auto-generated method stub
+			return null;
 		}
 	}
 	
@@ -186,9 +225,13 @@ public class LierdaPacketEntity{
 	 */
 	public static class HeartBeat extends PacketEntity.HeartBeat 
 								implements IJsonEncoder{
-		
 		public final static String cmdValue = "heartbeat";
 		
+		public HeartBeat() {
+		}
+		public HeartBeat(int sn) {
+			super(sn);
+		}		
 		@Override
 		public int getProtocolType() {
 			return getMyProtocolType();
@@ -221,7 +264,12 @@ public class LierdaPacketEntity{
 		 */
 		public static class Ack extends PacketEntity.HeartBeat.Ack 
 								implements IJsonDecoder{
-			
+			public Ack() {
+			}
+//			public Ack(int sn) {
+//				super(sn);
+//			}
+//			
 			@Override
 			public int getProtocolType() {
 				return getMyProtocolType();
@@ -260,12 +308,16 @@ public class LierdaPacketEntity{
 	 */
 	public static class DevStatus extends PacketEntity.DevStatus 
 							implements IJsonDecoder, IJsonEncoder{
-
-//		private String data[];
+		//		private String data[];
 		public final static String cmdValue = "upload";
 		public final static String macName = "mac";
 		public final static String dataName = "data";
 		
+		public DevStatus() {
+		}
+//		public DevStatus(int sn, long mac, DevData devData) {
+//			super(sn, mac, devData);
+//		}
 		@Override
 		public int getProtocolType() {
 			return getMyProtocolType();
@@ -276,7 +328,6 @@ public class LierdaPacketEntity{
 				super.setSn(sn);
 		}
 		
-		
 		@Override
 		public boolean jsonDecoder(JSONObject json) throws JSONException {
 
@@ -284,10 +335,16 @@ public class LierdaPacketEntity{
 				return false;
 			}
 			setSn(json.getInt(snName));
-			setMac(json.getString(macName));
+			long mac = ConvertUtil.macString2Long(json.getString(macName));
+			if (mac == -1) {
+				return false;
+			} else {
+				setMac(mac);
+			}
 			
 			JSONArray dataArr = json.getJSONArray(dataName);
-			LierdaDevData data = new LierdaDevData();
+//			DevDataLierda data = new DevDataLierda();
+			DevDataHezhong data = new DevDataHezhong();
 			data.mcuDecoder(dataArr);
 			
 			setDevData(data);
@@ -296,6 +353,7 @@ public class LierdaPacketEntity{
 			
 			return true;
 		}
+		
 		@Override
 		public JSONObject jsonEncoder() throws JSONException {
 			
@@ -306,8 +364,8 @@ public class LierdaPacketEntity{
 			if (getSn() != -1) {
 				json.put(snName, getSn());
 			}
-			if (getMac() != null) {
-				json.put(macName, getMac());
+			if (getMac() != -1) {
+				json.put(macName, ConvertUtil.macLong2String(getMac()));
 			}
 			
 			if (getDevData() != null) {

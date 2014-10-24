@@ -3,12 +3,12 @@ package com.skyware.sdk.manage;
 import static com.skyware.sdk.consts.SocketConst.*;
 
 import java.io.IOException;
+import java.net.BindException;
 import java.net.InetSocketAddress;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -20,11 +20,13 @@ import com.skyware.sdk.callback.ISocketCallback;
 import com.skyware.sdk.callback.UDPCallback;
 import com.skyware.sdk.consts.ErrorConst;
 import com.skyware.sdk.consts.SDKConst;
+import com.skyware.sdk.consts.SocketConst;
 import com.skyware.sdk.packet.InPacket;
 import com.skyware.sdk.packet.OutPacket;
+import com.skyware.sdk.packet.entity.PacketHelper;
 import com.skyware.sdk.socket.IOHandler;
 import com.skyware.sdk.socket.UDPHandler;
-import com.skyware.sdk.util.PacketHelper;
+import com.skyware.sdk.thread.ThreadPoolManager;
 
 public class UDPCommunication extends SocketCommunication{
 
@@ -40,15 +42,16 @@ public class UDPCommunication extends SocketCommunication{
 	/**	Broadcaster线程的Future */
 	private ScheduledFuture<?> mBroadcasterFuture;
 	
-	/**	处理Receiver和周期broadcast的线程池 */
-	private ScheduledThreadPoolExecutor mThreadPool;
+//	private ScheduledThreadPoolExecutor mThreadPool;
 	
 	/** WiFi网段下的广播地址 */
 //	private InetSocketAddress mBroadcastAddr;
 	
 	public UDPCommunication(INetCallback netCallback) {
 
-		mThreadPool = new ScheduledThreadPoolExecutor(3);	//Start线程、发送线程与接收线程
+		/**	处理Receiver和周期broadcast的线程 */
+//		mThreadPool = new ScheduledThreadPoolExecutor(3);	//Start线程、发送线程与接收线程
+		ThreadPoolManager.getInstance().addCoreThread(SDKConst.THREAD_UDP_MAX_NUM);
 		
 		mSocketCallback = new UDPCallback(this);
 		setNetCallback(netCallback);
@@ -107,8 +110,8 @@ public class UDPCommunication extends SocketCommunication{
 		}
 		
 		//如果Handler start成功，则创建receiver线程
-		if (mUDPHandler.isStarted()) {
-			mReceiverFuture = mThreadPool.submit(mUDPHandler);
+		if (mUDPHandler != null && mUDPHandler.isStarted()) {
+			mReceiverFuture = ThreadPoolManager.getInstance().getThreadPool().submit(mUDPHandler);
 			return true;
 		}
 		return false;
@@ -131,16 +134,16 @@ public class UDPCommunication extends SocketCommunication{
 			createHandlerAndWaitForStart();
 		}
 
-		if (mUDPHandler.isStarted()) {
-			mBroadcasterFuture = mThreadPool.scheduleWithFixedDelay(new Runnable() {
+		if (mUDPHandler != null && mUDPHandler.isStarted()) {
+			mBroadcasterFuture = ThreadPoolManager.getInstance().getThreadPool().scheduleWithFixedDelay(new Runnable() {
 				@Override
 				public void run() {
 					if(mUDPHandler != null && mUDPHandler.isStarted()){
 //						throw new RuntimeException("IOHandler isn't stated!");
 						try {
-							for(int protocol = 0; protocol < SDKConst.PROTOCOL_COUNT; protocol++) {
+							for(int protocol : SDKConst.PROTOCOL_FIND_SET){
 								mUDPHandler.send(PacketHelper.getBroadcastFindPacket(protocol));
-							} 
+							}
 						} catch (Exception e) {
 							e.printStackTrace();
 						}
@@ -162,7 +165,7 @@ public class UDPCommunication extends SocketCommunication{
 			//开启start()线程
 			mUDPHandler.start();
 			//等待start完成
-			return (Boolean) mStartFuture.get(BIO_TIMEOUT_UDP_START, TimeUnit.MILLISECONDS);
+			return (Boolean) mStartFuture.get(TIMEOUT_UDP_START, TimeUnit.MILLISECONDS);
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 		} catch (ExecutionException e) {
@@ -226,8 +229,8 @@ public class UDPCommunication extends SocketCommunication{
 		stopReceiverThread();
 		stopBroadcasterThread();
 		
-		mThreadPool.shutdownNow();
-		mThreadPool = null;
+//		mThreadPool.shutdownNow();
+//		mThreadPool = null;
 		
 		mStartFuture = null;
 		mReceiverFuture = null;
@@ -291,6 +294,13 @@ public class UDPCommunication extends SocketCommunication{
 	}
 	
 	@Override
+	public void onSendFinished(OutPacket packet) {
+		if (mNetCallback != null){
+			mNetCallback.onSendUDPFinished(packet);
+		}
+	}
+	
+	@Override
 	public void onCloseFinished(IOHandler h) {
 		// TODO Auto-generated method stub
 		
@@ -329,12 +339,23 @@ public class UDPCommunication extends SocketCommunication{
 		@Override
 		public boolean start() {
 			
-			mStartFuture = mThreadPool.submit(new Callable<Object>() {
+			mStartFuture = ThreadPoolManager.getInstance().getThreadPool().submit(new Callable<Object>() {
 				@Override
 				public Object call() throws Exception {
 					synchronized (UDPTask.this) {	//防止两个线程同时start
-						if (!isStarted()) {	//防止重复start
-							return UDPTask.super.start();
+						int reStartTimes = 0;
+						while (++reStartTimes < SocketConst.RETRY_TIMES_UDP_START) {
+							try{
+								if (!isStarted()) {	//防止重复start
+									return UDPTask.super.start();
+								} 
+							} catch (BindException e){	//防止绑定端口冲突
+//								Log.e("WYF", "Bind port retry!");
+								if (!isStarted()) {
+									setLocalBindPort(getLocalBindPort() + 1);
+									return UDPTask.super.start();
+								}
+							}
 						}
 						return false;
 					}
@@ -348,7 +369,7 @@ public class UDPCommunication extends SocketCommunication{
 		public Object call() throws Exception {
 			
 			while(initBroadcastTimes.getAndDecrement() > 0){
-				for (int protocol = 0; protocol < SDKConst.PROTOCOL_COUNT; protocol++) {
+				for(int protocol : SDKConst.PROTOCOL_FIND_SET){
 					send(PacketHelper.getBroadcastFindPacket(protocol));
 				}
 				Thread.sleep(initBroadcastPeriod.get());

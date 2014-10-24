@@ -1,8 +1,8 @@
 package com.skyware.sdk.exception;
 
-import java.io.IOException;
+import java.net.SocketException;
 
-public class SkySocketUnstartedException extends IOException{
+public class SkySocketUnstartedException extends SocketException{
 
 	private static final long serialVersionUID = -3715725718954020241L;
 

@@ -1,6 +1,7 @@
 package com.skyware.sdk.callback;
 
 import com.skyware.sdk.consts.ErrorConst;
+import com.skyware.sdk.entity.DeviceInfo.DevType;
 import com.skyware.sdk.packet.InPacket;
 import com.skyware.sdk.packet.OutPacket;
 import com.skyware.sdk.packet.entity.PacketEntity.DevStatus;
@@ -16,7 +17,7 @@ public interface IBizCallback {
 	 *            错误消息
 	 */
 	void onConnectCloudError(ErrorConst errType, String errMsg);
-
+	
 	/**
 	 * 连接设备成功
 	 * 
@@ -24,6 +25,7 @@ public interface IBizCallback {
 	 */
 	void onConnectDeviceSuccess(long deviceMac);
 
+	
 	/**
 	 * 连接设备出错
 	 * 
@@ -52,8 +54,12 @@ public interface IBizCallback {
 	 *            设备MAC
 	 * @param deviceIp
 	 *            设备IP
+	 * @param deviceType
+	 *            设备类型
+	 * @param protocol
+	 *            协议版本
 	 */
-	void onDiscoverNewDevice(long deviceMac, String deviceIp);
+	void onDiscoverNewDevice(long deviceMac, String deviceIp, int protocol, DevType deviceType);
 
 	/**
 	 * 接收到设备的状态上报
@@ -89,26 +95,26 @@ public interface IBizCallback {
 	 */
 	void onRecvError(ErrorConst errType, String errMsg);
 
-	/**
-	 * 发送包完成
-	 * 
-	 * @param packet
-	 *            发送的包
-	 */
-	void onSendTCPPacketSuccess(OutPacket packet);
 
 	/**
-	 * 发送包错误
-	 * 
-	 * @param errType
-	 *            错误类型
-	 * @param errMsg
-	 *            错误信息
-	 * @param packet
-	 *            发送的包
+	 *	发送包完成
+	 *
+	 *	@param devMac	设备Mac
+	 *	@param sn		包Sn
 	 */
-	void onSendTCPPacketError(ErrorConst errType, String errMsg,
-			OutPacket packet);
+	void onSendCmdSuccess(long devMac, int sn);
+
+
+	/**
+	 *	发送包错误
+	 *
+	 *	@param devMac	设备Mac
+	 *	@param sn		包Sn
+	 *	@param errType	错误类型
+	 *	@param errMsg	错误信息
+	 */
+	void onSendCmdError(long devMac, int sn, ErrorConst errType,
+			String errMsg);
 
 	/**
 	 * 提示sdk出现的错误
@@ -120,4 +126,5 @@ public interface IBizCallback {
 	 */
 	void onSDKError(ErrorConst errType, String errMsg);
 
+	void onSendTCPPacket(OutPacket packet);
 }

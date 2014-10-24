@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent" >
+
+    <TextView
+        android:id="@+id/tv_monitor_temp"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignLeft="@+id/tv_monitor_pm2_5"
+        android:layout_below="@+id/tv_monitor_pm2_5"
+        android:layout_marginTop="48dp"
+        android:text="温度" />
+
+    <TextView
+        android:id="@+id/tv_monitor_hum"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignBottom="@+id/tv_monitor_temp"
+        android:layout_alignLeft="@+id/tv_monitor_pm10"
+        android:text="湿度" />
+
+    <TextView
+        android:id="@+id/tv_monitor_co2"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignRight="@+id/tv_monitor_temp"
+        android:layout_below="@+id/tv_monitor_temp"
+        android:layout_marginTop="46dp"
+        android:text="CO2" />
+
+    <TextView
+        android:id="@+id/tv_monitor_voc"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignBaseline="@+id/tv_monitor_co2"
+        android:layout_alignBottom="@+id/tv_monitor_co2"
+        android:layout_alignLeft="@+id/tv_monitor_hum"
+        android:text="VOC" />
+
+    <TextView
+        android:id="@+id/tv_monitor_pm2_5"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentTop="true"
+        android:layout_marginLeft="22dp"
+        android:layout_marginTop="68dp"
+        android:text="PM2.5" />
+
+    <TextView
+        android:id="@+id/tv_monitor_pm10"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_above="@+id/tv_monitor_temp"
+        android:layout_marginLeft="108dp"
+        android:layout_toRightOf="@+id/tv_monitor_pm2_5"
+        android:text="PM10" />
+    
+</RelativeLayout>

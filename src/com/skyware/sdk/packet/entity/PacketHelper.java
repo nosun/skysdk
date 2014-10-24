@@ -1,4 +1,4 @@
-package com.skyware.sdk.util;
+package com.skyware.sdk.packet.entity;
 
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
@@ -14,13 +14,9 @@ import com.skyware.sdk.manage.BizManager;
 import com.skyware.sdk.packet.InPacket;
 import com.skyware.sdk.packet.OutPacket;
 import com.skyware.sdk.packet.Packet;
-import com.skyware.sdk.packet.entity.BroadlinkPacketEntity;
-import com.skyware.sdk.packet.entity.LierdaPacketEntity;
-import com.skyware.sdk.packet.entity.LierdaPacketEntity.DevCmd;
-import com.skyware.sdk.packet.entity.LierdaPacketEntity.DevStatus;
-import com.skyware.sdk.packet.entity.LierdaPacketEntity.HeartBeat;
-import com.skyware.sdk.packet.entity.PacketEntity;
 import com.skyware.sdk.packet.entity.PacketEntity.PacketType;
+import com.skyware.sdk.util.ConvertUtil;
+import com.skyware.sdk.util.NetworkHelper;
 
 public class PacketHelper {
 	
@@ -54,18 +50,18 @@ public class PacketHelper {
 		packet.setType(PacketType.DEVFIND);
 		packet.setTargetAddr( new InetSocketAddress(
 				NetworkHelper.getBroadcastIpAddress(BizManager.getInstace().getContext()),
-				SocketConst.PORT_UDP_REMOTE[protocol]));
-
+				SDKConst.PROTOCOL_PORT_FIND[protocol]));
+		packet.setProtocolType(protocol);
+		
+		PacketEntity.DevFind broadcastFind;
 		switch (protocol) {
-		case SDKConst.PROTOCOL_LIERDA:
-			PacketEntity.DevFind broadcastFind1 = new LierdaPacketEntity.DevFind();
-			
-			packet.setContent(broadcastFind1.byteEncoder());
+		case SDKConst.PROTOCOL_MOORE:
+			broadcastFind = new MoorePacketEntity.DevFind();
+			packet.setContent(broadcastFind.byteEncoder());
 			break;
 		case SDKConst.PROTOCOL_BROADLINK:
-			PacketEntity.DevFind broadcastFind2 = new BroadlinkPacketEntity.DevFind();
-			
-			packet.setContent(broadcastFind2.byteEncoder());
+			broadcastFind = new BroadlinkPacketEntity.DevFind();
+			packet.setContent(broadcastFind.byteEncoder());
 			break;
 		}
 		return packet.getContent() != null? packet : null;
@@ -82,17 +78,17 @@ public class PacketHelper {
 		
 		packet.setType(PacketType.HEARTBEAT);
 		packet.setSn(sn);
+		packet.setProtocolType(protocol);
 		
+		PacketEntity.HeartBeat heartBeat;
 		switch (protocol) {
-		case SDKConst.PROTOCOL_LIERDA:
-			PacketEntity.HeartBeat heartBeat1 = new LierdaPacketEntity.HeartBeat();
-			heartBeat1.setSn(sn);
-			packet.setContent(heartBeat1.byteEncoder());
+		case SDKConst.PROTOCOL_MOORE:
+			heartBeat = new MoorePacketEntity.HeartBeat(sn);
+			packet.setContent(heartBeat.byteEncoder());
 			break;
 		case SDKConst.PROTOCOL_BROADLINK:
-			PacketEntity.HeartBeat heartBeat2 = new BroadlinkPacketEntity.HeartBeat();
-			heartBeat2.setSn(sn);
-			packet.setContent(heartBeat2.byteEncoder());
+			heartBeat = new BroadlinkPacketEntity.HeartBeat(sn);
+			packet.setContent(heartBeat.byteEncoder());
 			break;
 		}
 
@@ -106,46 +102,52 @@ public class PacketHelper {
 	 * @param targetAddr 发送目标地址
 	 * @return OutPacket 心跳包
 	 */
-/*	public static OutPacket getDevCheckPacket(int sn) {
+	public static OutPacket getDevCheckPacket(int sn, long mac, int protocol) {
 		OutPacket packet = new OutPacket();
-		DevCheck devCheck = new DevCheck();
-		devCheck.setSn(sn);
 		
-		packet.setType(OutPacket.Type.TYPE_DEVCHECK);
-//		packet.setTargetAddr(targetAddr);
+		packet.setType(PacketType.DEVCHECK);
 		packet.setSn(sn);
+		packet.setProtocolType(protocol);
+		
+		PacketEntity.DevCheck devCheck;
+		switch (protocol) {
+		case SDKConst.PROTOCOL_MOORE:
+			devCheck = new MoorePacketEntity.DevCheck(sn);
+			packet.setContent(devCheck.byteEncoder());
+			break;
+		case SDKConst.PROTOCOL_GREEN:
+			devCheck = new GreenPacketEntity.DevCheck();
+			packet.setContent(devCheck.byteEncoder());
+			break;
+		}		
 
-		packet.setContent(devCheck.jsonEncoder().toString()
-								.getBytes(SocketConst.CHARSET_TCP_CONTENT));
-
-		return packet;
-	}*/
+		return packet.getContent() != null? packet : null;
+	}
 	
 	/**
-	 * 获取设备查询包
+	 * 获取设备命令包
 	 * 
 	 * @param sn	请求-应答标识
-	 * @param targetAddr 发送目标地址
+	 * @param data 命令实体
+	 * @param mac	目标设备mac
 	 * @return OutPacket 心跳包	null--转码失败
 	 */
-	public static OutPacket getDevCmdPacket(int sn, DevData data, int protocol) {
+	public static OutPacket getDevCmdPacket(int sn, DevData data, long mac, int protocol) {
 		OutPacket packet = new OutPacket();
 
 		packet.setType(PacketType.DEVCOMMAND);
 		packet.setSn(sn);
+		packet.setProtocolType(protocol);
 		
+		PacketEntity.DevCmd devCmd;
 		switch (protocol) {
-		case SDKConst.PROTOCOL_LIERDA:
-			PacketEntity.DevCmd devCmd1 = new LierdaPacketEntity.DevCmd();
-			devCmd1.setSn(sn);
-			devCmd1.setData(data);
-			packet.setContent(devCmd1.byteEncoder());
+		case SDKConst.PROTOCOL_MOORE:
+			devCmd = new MoorePacketEntity.DevCmd(sn, data);
+			packet.setContent(devCmd.byteEncoder());
 			break;
 		case SDKConst.PROTOCOL_BROADLINK:
-			PacketEntity.DevCmd devCmd2 = new BroadlinkPacketEntity.DevCmd();
-			devCmd2.setSn(sn);
-			devCmd2.setData(data);
-			packet.setContent(devCmd2.byteEncoder());
+			devCmd = new BroadlinkPacketEntity.DevCmd(sn, data, mac);
+			packet.setContent(devCmd.byteEncoder());
 			break;
 		}
 		return packet.getContent() != null? packet : null;
@@ -166,19 +168,31 @@ public class PacketHelper {
 	 */
 	public static int resolvePacketSn(Packet packet, int protocol) {
 		switch (protocol) {
-		case SDKConst.PROTOCOL_LIERDA:
+		case SDKConst.PROTOCOL_MOORE:
 			try {
 				JSONObject mJson = new JSONObject(new String(packet.getContent(), 
 								Charset.forName(SocketConst.CHARSET_TCP_CONTENT)));
 			
 				return mJson.getInt("sn");
 			} catch (JSONException e) {
-				e.printStackTrace();
+//				e.printStackTrace();  广播包
 			}
 			return -1;
 		case SDKConst.PROTOCOL_BROADLINK:
 			//TODO 博联插座
-			
+			switch (resolvePacketType(packet, protocol)) {
+			case DEVCOMMAND_ACK:
+				int magicHeaderLen = 32;
+				int snOffset = magicHeaderLen + 8;
+				byte[] snByte = new byte[2];
+				System.arraycopy(packet.getContent(), snOffset, snByte, 0, 2);
+				return ConvertUtil.snByte2UnsignedShort(snByte);
+			default:
+				return -1;
+			}
+		case SDKConst.PROTOCOL_GREEN:
+			//TODO 金立格林 无sn
+			return -1;
 		default:
 			return -1;
 		}
@@ -193,7 +207,7 @@ public class PacketHelper {
 	public static PacketType resolvePacketType(Packet packet, int protocol) {
 		
 		switch (protocol) {
-		case SDKConst.PROTOCOL_LIERDA:
+		case SDKConst.PROTOCOL_MOORE:
 			try {
 				JSONObject mJson = new JSONObject(new String(packet.getContent(), Charset.forName(SocketConst.CHARSET_TCP_CONTENT)));
 				
@@ -202,17 +216,17 @@ public class PacketHelper {
 				String cmdValue = mJson.getString("cmd");
 //				Log.e("PacketHelper", "cmd: " + cmdValue);
 				if (packet instanceof InPacket) {
-					if (cmdValue.equals(HeartBeat.cmdValue)) {
+					if (cmdValue.equals(MoorePacketEntity.HeartBeat.cmdValue)) {
 						return PacketType.HEARTBEAT_ACK; 
-					} else if(cmdValue.equals(DevCmd.cmdValue)) {
+					} else if(cmdValue.equals(MoorePacketEntity.DevCmd.cmdValue)) {
 						return PacketType.DEVCOMMAND_ACK; 
-					} else if(cmdValue.equals(DevStatus.cmdValue)) {
+					} else if(cmdValue.equals(MoorePacketEntity.DevStatus.cmdValue)) {
 						return PacketType.DEVSTATUS; 
 					} 
 				} else if (packet instanceof OutPacket) {
-					if (cmdValue.equals(HeartBeat.cmdValue)) {
+					if (cmdValue.equals(MoorePacketEntity.HeartBeat.cmdValue)) {
 						return PacketType.HEARTBEAT; 
-					} else if(cmdValue.equals(DevCmd.cmdValue)) {
+					} else if(cmdValue.equals(MoorePacketEntity.DevCmd.cmdValue)) {
 						return PacketType.DEVCOMMAND; 
 					} 
 				}
@@ -225,7 +239,15 @@ public class PacketHelper {
 			break;
 		case SDKConst.PROTOCOL_BROADLINK:
 			//TODO 博联插座
-			return PacketType.DEVFIND_ACK;
+			if (packet.getContent().length == 128) {
+				return PacketType.DEVFIND_ACK;
+			} else if (packet.getContent().length == 72) {
+				return PacketType.DEVCOMMAND_ACK;
+			}
+			break;
+		case SDKConst.PROTOCOL_GREEN:
+			//TODO 金立格林
+			return PacketType.DEVSTATUS;
 			
 		default:
 			break;
@@ -243,11 +265,17 @@ public class PacketHelper {
 	public static PacketEntity.DevStatus resolveDevStatPacket(InPacket packet, int protocol) {
 		PacketEntity.DevStatus status;
 		switch (protocol) {
-		case SDKConst.PROTOCOL_LIERDA:
-			status = new LierdaPacketEntity.DevStatus();
+		case SDKConst.PROTOCOL_MOORE:
+			status = new MoorePacketEntity.DevStatus();
 			return status.byteDecoder(packet.getContent())? status: null;
 		case SDKConst.PROTOCOL_BROADLINK:
 			//TODO 博联插座
+			status = new BroadlinkPacketEntity.DevStatus();
+			return status.byteDecoder(packet.getContent())? status: null;
+		case SDKConst.PROTOCOL_GREEN:
+			//TODO 博联插座
+			status = new GreenPacketEntity.DevStatus();
+			return status.byteDecoder(packet.getContent())? status: null;
 		default:
 			return null;
 		}
@@ -263,8 +291,8 @@ public class PacketHelper {
 	public static PacketEntity.DevFind.Ack resolveDevFindAck(Packet packet, int protocol) {
 		PacketEntity.DevFind.Ack findAck;
 		switch (protocol) {
-		case SDKConst.PROTOCOL_LIERDA:
-			findAck = new LierdaPacketEntity.DevFind.Ack();
+		case SDKConst.PROTOCOL_MOORE:
+			findAck = new MoorePacketEntity.DevFind.Ack();
 			return findAck.byteDecoder(packet.getContent())? findAck: null;
 		case SDKConst.PROTOCOL_BROADLINK:
 			//TODO 博联插座
