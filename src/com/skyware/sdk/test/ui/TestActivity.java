@@ -1,4 +1,4 @@
-package com.skyware.sdk.test.ui;
+/*package com.skyware.sdk.test.ui;
 
 import java.util.Random;
 
@@ -13,24 +13,22 @@ import android.widget.CompoundButton;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
 import android.widget.ScrollView;
-import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import com.skyware.sdk.R;
+import com.skyware.sdk.api.SDKConfig;
+import com.skyware.sdk.api.SkySDK;
 import com.skyware.sdk.consts.SocketConst;
 import com.skyware.sdk.entity.DeviceInfo;
-import com.skyware.sdk.entity.ErrorInfo;
 import com.skyware.sdk.entity.DeviceInfo.DevType;
+import com.skyware.sdk.entity.ErrorInfo;
 import com.skyware.sdk.entity.biz.CmdInfoAirPurifier;
 import com.skyware.sdk.entity.biz.CmdInfoPlugin;
 import com.skyware.sdk.entity.biz.DevDataBroadlink;
 import com.skyware.sdk.entity.biz.DevDataHezhong;
 import com.skyware.sdk.entity.biz.DevDataHezhong.MODE;
-import com.skyware.sdk.entity.SDKConfig;
-import com.skyware.sdk.manage.SkySDK;
 import com.skyware.sdk.packet.entity.PacketEntity.DevStatus;
-import com.skyware.sdk.util.ConvertUtil;
 
 public class TestActivity extends Activity {
 
@@ -40,8 +38,8 @@ public class TestActivity extends Activity {
 	// private Button onButton2;
 	// private Button offButton1;
 	// private Button offButton2;
-	private Button connButton;
-	private Button disconnButton;
+//	private Button connButton;
+//	private Button disconnButton;
 	private Button pluginPowerOnButton;
 	private Button pluginPowerOffButton;
 	private TextView resultTextView;
@@ -52,11 +50,16 @@ public class TestActivity extends Activity {
 	private TextView devHumTextView;
 	private TextView devPmTextView;
 	private TextView devPmLevelTextView;
+	private TextView devNetStatTv;
 	
-	private Switch powerSwitch;
-	private Switch childLockSwitch;
-	private Switch uvSwitch;
-	private Switch anionSwitch;
+	private RadioButton powerOnRadioButton;
+	private RadioButton powerOffRadioButton;
+	private RadioButton childOnLockRadioButton;
+	private RadioButton childOffLockRadioButton;
+	private RadioButton uvOnRadioButton;
+	private RadioButton uvOffRadioButton;
+	private RadioButton anionOnRadioButton;
+	private RadioButton anionOffRadioButton;
 
 	private RadioGroup modeRadioGroup;
 	private RadioGroup timerRadioGroup;
@@ -66,6 +69,7 @@ public class TestActivity extends Activity {
 	private RadioButton modeAutoRadioButton;
 	private RadioButton modeSleepRadioButton;
 	
+	private RadioButton timer0RadioButton;
 	private RadioButton timer1RadioButton;
 	private RadioButton timer2RadioButton;
 	private RadioButton timer3RadioButton;
@@ -120,13 +124,18 @@ public class TestActivity extends Activity {
 		devPmTextView = (TextView) findViewById(R.id.tv_dev_pm_value);
 		devPmLevelTextView = (TextView) findViewById(R.id.tv_dev_pm_level_value);
 
-		connButton = (Button) findViewById(R.id.btn_start);
-		disconnButton = (Button) findViewById(R.id.btn_stop);
-
-		powerSwitch = (Switch) findViewById(R.id.switch_power);
-		childLockSwitch = (Switch) findViewById(R.id.switch_child_lock);
-		uvSwitch = (Switch) findViewById(R.id.switch_uv);
-		anionSwitch = (Switch) findViewById(R.id.switch_anion);
+//		connButton = (Button) findViewById(R.id.btn_start);
+//		disconnButton = (Button) findViewById(R.id.btn_stop);
+		devNetStatTv = (TextView) findViewById(R.id.tv_dev_net_status);
+		
+		powerOnRadioButton = (RadioButton) findViewById(R.id.rb_power_on);
+		powerOffRadioButton = (RadioButton) findViewById(R.id.rb_power_off);
+		childOnLockRadioButton = (RadioButton) findViewById(R.id.rb_childlock_on);
+		childOffLockRadioButton = (RadioButton) findViewById(R.id.rb_childlock_off);
+		uvOnRadioButton = (RadioButton) findViewById(R.id.rb_uv_on);
+		uvOffRadioButton = (RadioButton) findViewById(R.id.rb_uv_off);
+		anionOnRadioButton = (RadioButton) findViewById(R.id.rb_anion_on);
+		anionOffRadioButton = (RadioButton) findViewById(R.id.rb_anion_off);
 		
 		pluginPowerOnButton = (Button) findViewById(R.id.btn_power_on_plugin);
 		pluginPowerOffButton = (Button) findViewById(R.id.btn_power_off_plugin);
@@ -139,6 +148,7 @@ public class TestActivity extends Activity {
 		modeAutoRadioButton = (RadioButton) findViewById(R.id.radio_mode_auto);
 		modeSleepRadioButton = (RadioButton) findViewById(R.id.radio_mode_sleep);
 		
+		timer0RadioButton = (RadioButton) findViewById(R.id.radio_timer0);
 		timer1RadioButton = (RadioButton) findViewById(R.id.radio_timer1);
 		timer2RadioButton = (RadioButton) findViewById(R.id.radio_timer2);
 		timer3RadioButton = (RadioButton) findViewById(R.id.radio_timer3);
@@ -199,21 +209,25 @@ public class TestActivity extends Activity {
 		// getSn());
 		// }
 		// });
-		powerSwitch.setClickable(false);
-		childLockSwitch.setClickable(false);
-		uvSwitch.setClickable(false);
-		anionSwitch.setClickable(false);
+//		powerSwitch.setClickable(false);
+//		childLockSwitch.setClickable(false);
+//		uvSwitch.setClickable(false);
+//		anionSwitch.setClickable(false);
 
-		connButton.setOnClickListener(clickListener);
-		disconnButton.setOnClickListener(clickListener);
+//		connButton.setOnClickListener(clickListener);
+//		disconnButton.setOnClickListener(clickListener);
 
 		pluginPowerOnButton.setOnClickListener(clickListener);
 		pluginPowerOffButton.setOnClickListener(clickListener);
 
-		powerSwitch.setOnClickListener(clickListener);
-		childLockSwitch.setOnClickListener(clickListener);
-		uvSwitch.setOnClickListener(clickListener);
-		anionSwitch.setOnClickListener(clickListener);
+		powerOnRadioButton.setOnClickListener(clickListener);
+		powerOffRadioButton.setOnClickListener(clickListener);
+		childOnLockRadioButton.setOnClickListener(clickListener);
+		childOffLockRadioButton.setOnClickListener(clickListener);
+		uvOnRadioButton.setOnClickListener(clickListener);
+		uvOffRadioButton.setOnClickListener(clickListener);
+		anionOnRadioButton.setOnClickListener(clickListener);
+		anionOffRadioButton.setOnClickListener(clickListener);
 
 		modeRadioGroup.setClickable(false);
 
@@ -223,6 +237,7 @@ public class TestActivity extends Activity {
 		
 		timerRadioGroup.setClickable(false);
 
+		timer0RadioButton.setOnClickListener(clickListener);
 		timer1RadioButton.setOnClickListener(clickListener);
 		timer2RadioButton.setOnClickListener(clickListener);
 		timer3RadioButton.setOnClickListener(clickListener);
@@ -243,20 +258,80 @@ public class TestActivity extends Activity {
 		fanspeed3RadioButton.setOnClickListener(clickListener);
 		fanspeed4RadioButton.setOnClickListener(clickListener);
 		fanspeed5RadioButton.setOnClickListener(clickListener);
+		
+		SDKConfig config = new SDKConfig();
+		config.setUserId("568912921").setIsLogin(true);
+		
+		SkySDK.startSDK(getApplication(), new SDKCallback(), config);
+		
 	}
 
+
+	@Override
+	protected void onResume() {
+		super.onResume();
+		
+		SkySDK.resumeSDK(getApplicationContext());
+		
+//		String devShow = info.getIp() + "   " + info.getKey();
+//		// deviceCount++;
+
+//		if (info.getDevType() != null
+//				&& info.getDevType() == DevType.AIR_PURIFIER) {
+		layoutDevAirPurifier.setVisibility(View.VISIBLE);
+		devInfoTextView.setTag("ACCF232C6F26");
+		
+//			powerSwitch.setChecked(false);
+//			childLockSwitch.setChecked(false);
+//			uvSwitch.setChecked(false);
+//			anionSwitch.setChecked(false);
+
+//		} else if (info.getDevType() != null
+//				&& info.getDevType() == DevType.PLUGIN) {
+//			layoutDevPlugin.setVisibility(View.VISIBLE);
+//
+//		}
+
+//		devInfoTextView.setText(devShow);
+//		devInfoTextView.setTag(info.getKey());
+	}
+	
+	@Override
+	protected void onPause() {
+		super.onPause();
+
+		SkySDK.pauseSDK();
+	}
+	
+	@Override
+	protected void onDestroy() {
+		
+		SkySDK.stopSDK();
+		
+		layoutDevAirPurifier.setVisibility(View.GONE);
+		// layoutDev2.setVisibility(View.GONE);
+
+		// deviceCount = 0;
+
+//		powerSwitch.setChecked(false);
+//		childLockSwitch.setChecked(false);
+//		uvSwitch.setChecked(false);
+//		anionSwitch.setChecked(false);
+	}
+	
+	
 	OnClickListener clickListener = new OnClickListener() {
 
 		@Override
 		public void onClick(View v) {
 			CmdInfoAirPurifier cmd = new CmdInfoAirPurifier();
 			switch (v.getId()) {
-			case R.id.btn_start:
-				SkySDK.startConnectDevice((String) devInfoTextView.getTag());
-				break;
-			case R.id.btn_stop:
-				SkySDK.stopConnectDevice((String) devInfoTextView.getTag());
-				break;
+//			case R.id.btn_start:
+//				SkySDK.startConnectDevice((String) devInfoTextView.getTag());
+//				break;
+//			case R.id.btn_stop:
+//				SkySDK.stopConnectDevice((String) devInfoTextView.getTag());
+//				break;
 			case R.id.btn_power_on_plugin:
 				CmdInfoPlugin cmd2 = new CmdInfoPlugin();
 				cmd2.setPowerOn();
@@ -269,45 +344,57 @@ public class TestActivity extends Activity {
 				SkySDK.sendCmdToDevice((String) devInfoTextView.getTag(), cmd3,
 						getSn());
 				break;
-			case R.id.switch_power:
+			case R.id.rb_power_off:
 				if (((CompoundButton) v).isChecked()) {
 					cmd.setPowerOff();
 					SkySDK.sendCmdToDevice((String) devInfoTextView.getTag(),
 							cmd, getSn());
-				} else {
+				}
+				break;
+			case R.id.rb_power_on:
+				if (((CompoundButton) v).isChecked()) {
 					cmd.setPowerOn();
 					SkySDK.sendCmdToDevice((String) devInfoTextView.getTag(),
 							cmd, getSn());
 				}
 				break;
-			case R.id.switch_child_lock:
+			case R.id.rb_childlock_off:
 				if (((CompoundButton) v).isChecked()) {
 					cmd.setChildLockOff();
 					SkySDK.sendCmdToDevice((String) devInfoTextView.getTag(),
 							cmd, getSn());
-				} else {
+				} 
+				break;
+			case R.id.rb_childlock_on:
+				if (((CompoundButton) v).isChecked()) {
 					cmd.setChildLockOn();
 					SkySDK.sendCmdToDevice((String) devInfoTextView.getTag(),
 							cmd, getSn());
 				}
 				break;
-			case R.id.switch_uv:
+			case R.id.rb_uv_off:
 				if (((CompoundButton) v).isChecked()) {
 					cmd.setUvOff();
 					SkySDK.sendCmdToDevice((String) devInfoTextView.getTag(),
 							cmd, getSn());
-				} else {
+				}
+				break;
+			case R.id.rb_uv_on:
+				if (((CompoundButton) v).isChecked()) {
 					cmd.setUvOn();
 					SkySDK.sendCmdToDevice((String) devInfoTextView.getTag(),
 							cmd, getSn());
 				}
 				break;
-			case R.id.switch_anion:
+			case R.id.rb_anion_off:
 				if (((CompoundButton) v).isChecked()) {
 					cmd.setAnionOff();
 					SkySDK.sendCmdToDevice((String) devInfoTextView.getTag(),
 							cmd, getSn());
-				} else {
+				} 
+				break;
+			case R.id.rb_anion_on:
+				if (((CompoundButton) v).isChecked()) {
 					cmd.setAnionOn();
 					SkySDK.sendCmdToDevice((String) devInfoTextView.getTag(),
 							cmd, getSn());
@@ -330,6 +417,13 @@ public class TestActivity extends Activity {
 			case R.id.radio_mode_sleep:
 				if (((CompoundButton) v).isChecked() == true) {
 					cmd.setMode(MODE.SLEEP);
+					SkySDK.sendCmdToDevice((String) devInfoTextView.getTag(),
+							cmd, getSn());
+				}
+				break;
+			case R.id.radio_timer0:
+				if (((CompoundButton) v).isChecked() == true) {
+					cmd.setTimer(0);
 					SkySDK.sendCmdToDevice((String) devInfoTextView.getTag(),
 							cmd, getSn());
 				}
@@ -459,40 +553,16 @@ public class TestActivity extends Activity {
 		}
 	};
 
-	@Override
-	protected void onStop() {
-		super.onStop();
 
-		SkySDK.stopSDK();
 
-		layoutDevAirPurifier.setVisibility(View.GONE);
-		// layoutDev2.setVisibility(View.GONE);
-
-		// deviceCount = 0;
-
-		powerSwitch.setChecked(false);
-		childLockSwitch.setChecked(false);
-		uvSwitch.setChecked(false);
-		anionSwitch.setChecked(false);
-	}
-
-	@Override
-	protected void onStart() {
-		super.onStart();
-
-		SDKConfig config = new SDKConfig();
-		config.setApMode(false);
-		
-		SkySDK.startSDK(getApplication(), new SDKCallback(), config);
-	}
-
-	/*
-	 * @Override protected void onNewIntent(Intent intent) {
-	 * super.onNewIntent(intent);
-	 * 
-	 * resultTextView.setText(resultTextView.getText() + "\n" +
-	 * intent.getStringExtra(SDKConst.EXTRA_NAME_DISCOVER)); }
-	 */
+	
+//	@Override protected void onNewIntent(Intent intent) {
+//		super.onNewIntent(intent);
+//
+//	 	resultTextView.setText(resultTextView.getText() + "\n" +
+//	 	intent.getStringExtra(SDKConst.EXTRA_NAME_DISCOVER)); 
+//	 }
+//	 
 	
 	
 	private class SDKCallback extends SkySDK.Callback {
@@ -528,10 +598,10 @@ public class TestActivity extends Activity {
 					&& info.getDevType() == DevType.AIR_PURIFIER) {
 				layoutDevAirPurifier.setVisibility(View.VISIBLE);
 
-				powerSwitch.setChecked(false);
-				childLockSwitch.setChecked(false);
-				uvSwitch.setChecked(false);
-				anionSwitch.setChecked(false);
+//				powerSwitch.setChecked(false);
+//				childLockSwitch.setChecked(false);
+//				uvSwitch.setChecked(false);
+//				anionSwitch.setChecked(false);
 
 			} else if (info.getDevType() != null
 					&& info.getDevType() == DevType.PLUGIN) {
@@ -542,43 +612,58 @@ public class TestActivity extends Activity {
 			devInfoTextView.setText(devShow);
 			devInfoTextView.setTag(info.getMac());
 		}
-
+		
 		@Override
-		public void onDeviceDismiss(String mac) {
-			// TODO Auto-generated method stub
-
-		}
-
-		@Override
-		public void onConnectDeviceResult(String mac, boolean success,
-				ErrorInfo errorInfo) {
-			if (success) {
-				if (mac.equals(devInfoTextView.getTag())) {
-					connButton.setEnabled(false);
-					disconnButton.setEnabled(true);
-					Toast.makeText(TestActivity.this, "设备MAC:" + mac + "已连接！",
-							Toast.LENGTH_SHORT).show();
-				}
-
-			} else {
-				if (mac.equals(devInfoTextView.getTag())) {
-					connButton.setEnabled(true);
-					disconnButton.setEnabled(false);
-					Toast.makeText(TestActivity.this, "设备MAC:" + mac + "连接失败！",
-							Toast.LENGTH_SHORT).show();
-				}
-			}
-		}
-
-		@Override
-		public void onDeviceDisconnected(String mac, ErrorInfo errorInfo) {
+		public void onDevNetStatChange(DeviceInfo info) {
+			String mac = info.getMac();
+			
 			if (mac.equals(devInfoTextView.getTag())) {
-				connButton.setEnabled(true);
-				disconnButton.setEnabled(false);
-				Toast.makeText(TestActivity.this, "设备MAC:" + mac + "已断线！",
-						Toast.LENGTH_SHORT).show();
+				if(!info.isAccess()){
+					devNetStatTv.setText(devNetStatTv.getText() + "离线");
+				} else {
+					if (info.isLocalOnline() && info.isRemoteOnline()) {
+						devNetStatTv.setText(devNetStatTv.getText() + "远程在线 | 局域网在线");
+					} else if (info.isLocalOnline() && !info.isRemoteOnline()) {
+						devNetStatTv.setText(devNetStatTv.getText() + "远程离线 | 局域网在线");
+					} else if (!info.isLocalOnline() && info.isRemoteOnline()) {
+						devNetStatTv.setText(devNetStatTv.getText() + "远程在线 | 局域网离线");
+					}
+				}
+				
 			}
+			
 		}
+
+//		@Override
+//		public void onConnectDeviceResult(String mac, boolean success,
+//				ErrorInfo errorInfo) {
+//			if (success) {
+//				if (mac.equals(devInfoTextView.getTag())) {
+//					connButton.setEnabled(false);
+//					disconnButton.setEnabled(true);
+//					Toast.makeText(TestActivity.this, "设备MAC:" + mac + "已连接！",
+//							Toast.LENGTH_SHORT).show();
+//				}
+//
+//			} else {
+//				if (mac.equals(devInfoTextView.getTag())) {
+//					connButton.setEnabled(true);
+//					disconnButton.setEnabled(false);
+//					Toast.makeText(TestActivity.this, "设备MAC:" + mac + "连接失败！",
+//							Toast.LENGTH_SHORT).show();
+//				}
+//			}
+//		}
+
+//		@Override
+//		public void onDeviceDisconnected(String mac, ErrorInfo errorInfo) {
+//			if (mac.equals(devInfoTextView.getTag())) {
+//				connButton.setEnabled(true);
+//				disconnButton.setEnabled(false);
+//				Toast.makeText(TestActivity.this, "设备MAC:" + mac + "已断线！",
+//						Toast.LENGTH_SHORT).show();
+//			}
+//		}
 
 		@Override
 		public void onSendDevCmdResult(String mac, int sn, boolean success,
@@ -601,7 +686,7 @@ public class TestActivity extends Activity {
 		@Override
 		@Deprecated
 		public void onRecvDevStatus(DevStatus status) {
-			String mac = ConvertUtil.macLong2String(status.getMac());
+			String mac = status.getKey();
 			
 			//如果是合众的协议
 			if (status.getDevData() instanceof DevDataHezhong) {
@@ -625,31 +710,31 @@ public class TestActivity extends Activity {
 				if (mac.equals(devInfoTextView.getTag())) {
 					if (power != null && !power.equals("")) {
 						if (power.equals(DevDataHezhong.VALUE_ON_STATE)) {
-							powerSwitch.setChecked(true);
+							powerOnRadioButton.setChecked(true);
 						} else if (power.equals(DevDataHezhong.VALUE_OFF_STATE)) {
-							powerSwitch.setChecked(false);
+							powerOffRadioButton.setChecked(true);
 						}
 					}
 					if (childLock != null && !childLock.equals("")) {
 						if (childLock.equals(DevDataHezhong.VALUE_ON_STATE)) {
-							childLockSwitch.setChecked(true);
+							childOnLockRadioButton.setChecked(true);
 						} else if (childLock
 								.equals(DevDataHezhong.VALUE_OFF_STATE)) {
-							childLockSwitch.setChecked(false);
+							childOffLockRadioButton.setChecked(true);
 						}
 					}
 					if (anion != null && !anion.equals("")) {
 						if (anion.equals(DevDataHezhong.VALUE_ON_STATE)) {
-							anionSwitch.setChecked(true);
+							anionOnRadioButton.setChecked(true);
 						} else if (anion.equals(DevDataHezhong.VALUE_OFF_STATE)) {
-							anionSwitch.setChecked(false);
+							anionOffRadioButton.setChecked(true);
 						}
 					}
 					if (uv != null && !uv.equals("")) {
 						if (uv.equals(DevDataHezhong.VALUE_ON_STATE)) {
-							uvSwitch.setChecked(true);
+							uvOnRadioButton.setChecked(true);
 						} else if (uv.equals(DevDataHezhong.VALUE_OFF_STATE)) {
-							uvSwitch.setChecked(false);
+							uvOffRadioButton.setChecked(true);
 						}
 					}
 					if (mode != null && !mode.equals("")) {
@@ -663,23 +748,25 @@ public class TestActivity extends Activity {
 					}
 
 					if (timer != null && !timer.equals("")) {
-						if (timer.equals("1")) {
+						if (timer.equals("00")) {
+							timer0RadioButton.setChecked(true);
+						} else if (timer.equals("01")) {
 							timer1RadioButton.setChecked(true);
-						} else if (timer.equals("2")) {
+						} else if (timer.equals("02")) {
 							timer2RadioButton.setChecked(true);
-						} else if (timer.equals("3")) {
+						} else if (timer.equals("03")) {
 							timer3RadioButton.setChecked(true);
-						} else if (timer.equals("4")) {
+						} else if (timer.equals("04")) {
 							timer4RadioButton.setChecked(true);
-						} else if (timer.equals("5")) {
+						} else if (timer.equals("05")) {
 							timer5RadioButton.setChecked(true);
-						} else if (timer.equals("6")) {
+						} else if (timer.equals("06")) {
 							timer6RadioButton.setChecked(true);
-						} else if (timer.equals("7")) {
+						} else if (timer.equals("07")) {
 							timer7RadioButton.setChecked(true);
-						} else if (timer.equals("8")) {
+						} else if (timer.equals("08")) {
 							timer8RadioButton.setChecked(true);
-						} else if (timer.equals("9")) {
+						} else if (timer.equals("09")) {
 							timer9RadioButton.setChecked(true);
 						} else if (timer.equals("10")) {
 							timer10RadioButton.setChecked(true);
@@ -727,6 +814,8 @@ public class TestActivity extends Activity {
 				
 			}
 		}
+
+	
 	}
 
 	public static void scrollToBottom(final View scroll, final View inner) {
@@ -746,3 +835,4 @@ public class TestActivity extends Activity {
 		});
 	}
 }
+*/

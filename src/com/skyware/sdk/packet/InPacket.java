@@ -18,8 +18,8 @@ public class InPacket extends Packet{
 	/** 包对应的类型 */
 	private PacketType type;
 
-	/** 包的发送目标设备MAC */
-	private int sourceMac;
+	/** 包的发送目标设备KEY */
+	private String sourceKey;
 
 	/** 包发送目标的SocketAddress */
 	private InetSocketAddress sourceAddr;
@@ -49,12 +49,12 @@ public class InPacket extends Packet{
 		this.receiveTime = receiveTime;
 	}
 
-	public int getSourceMac() {
-		return sourceMac;
+	public String getSourceKey() {
+		return sourceKey;
 	}
 
-	public void setSourceMac(int sourceMac) {
-		this.sourceMac = sourceMac;
+	public void setSourceKey(String sourceKey) {
+		this.sourceKey = sourceKey;
 	}
 
 	public InetSocketAddress getSourceAddr() {

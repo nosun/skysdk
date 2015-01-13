@@ -15,11 +15,11 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import android.util.Log;
 
+import com.skyware.sdk.api.SDKConst;
 import com.skyware.sdk.callback.INetCallback;
 import com.skyware.sdk.callback.ISocketCallback;
 import com.skyware.sdk.callback.UDPCallback;
 import com.skyware.sdk.consts.ErrorConst;
-import com.skyware.sdk.consts.SDKConst;
 import com.skyware.sdk.consts.SocketConst;
 import com.skyware.sdk.packet.InPacket;
 import com.skyware.sdk.packet.OutPacket;
@@ -81,13 +81,13 @@ public class UDPCommunication extends SocketCommunication{
 	}
 	
 
-	public boolean startNewUdpKeepAlive(long deviceMac,
-			InetSocketAddress targetAddr) {
+	public boolean startNewUdpTask(String deviceKey,
+			InetSocketAddress targetAddr, boolean keepAlive) {
 		// TODO Auto-generated method stub
 		return false;
 	}
 
-	public boolean stopUdpKeepAlive(long deviceMac) {
+	public boolean stopUdpTask(String deviceKey) {
 		// TODO Auto-generated method stub
 		return false;
 	}
@@ -236,10 +236,10 @@ public class UDPCommunication extends SocketCommunication{
 		mReceiverFuture = null;
 		mBroadcasterFuture = null;
 		
-		mSocketCallback = null;
-		setNetCallback(null);
+//		mSocketCallback = null;
+//		setNetCallback(null);
 
-		Log.e(this.getClass().getSimpleName(), "Destroy!");
+		Log.e(this.getClass().getSimpleName(), "finallize()!");
 	}
 	
 	
@@ -253,7 +253,7 @@ public class UDPCommunication extends SocketCommunication{
 		if (mNetCallback == null)
 			return;
 //		if (h instanceof TCPConnector) {
-//			mNetCallback.onConnectDeviceSuccess(((TCPConnector) h).getMac());
+//			mNetCallback.onConnectDeviceSuccess(((TCPConnector) h).getKey());
 //		}
 	}
 
@@ -268,15 +268,15 @@ public class UDPCommunication extends SocketCommunication{
 		if (mNetCallback == null)
 			return;
 //		if (h instanceof TCPConnector) {
-//			mNetCallback.onConnectDeviceError(((TCPConnector) h).getMac(), errType, errMsg);
+//			mNetCallback.onConnectDeviceError(((TCPConnector) h).getKey(), errType, errMsg);
 //		}
 	}
 	
 	@Override
-	public void onReceive(InPacket packet) {
+	public void onReceive(IOHandler h, InPacket packet) {
 		if (mNetCallback == null)
 			return;
-		mNetCallback.onReceiveUDP(packet);
+		mNetCallback.onReceiveUDP(h, packet);
 	}
 
 	@Override
@@ -284,19 +284,19 @@ public class UDPCommunication extends SocketCommunication{
 		if (mNetCallback == null)
 			return;
 //		if (h instanceof UDPBroadcaster) {
-//			mNetCallback.onReceiveUDPError(((TCPConnector) h).getMac(), errType, errMsg);
+//			mNetCallback.onReceiveUDPError(((TCPConnector) h).getKey(), errType, errMsg);
 //		} 
 //		
 //		if (h instanceof ) {
-//			mNetCallback.onReceiveUDPError(((TCPConnector) h).getMac(), errType, errMsg);
+//			mNetCallback.onReceiveUDPError(((TCPConnector) h).getKey(), errType, errMsg);
 //		}
 		
 	}
 	
 	@Override
-	public void onSendFinished(OutPacket packet) {
+	public void onSendFinished(IOHandler h, OutPacket packet) {
 		if (mNetCallback != null){
-			mNetCallback.onSendUDPFinished(packet);
+			mNetCallback.onSendUDPFinished(h, packet);
 		}
 	}
 	

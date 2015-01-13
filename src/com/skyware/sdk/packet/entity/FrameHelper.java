@@ -3,9 +3,8 @@ package com.skyware.sdk.packet.entity;
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Arrays;
 
-import com.skyware.sdk.consts.SDKConst;
+import com.skyware.sdk.api.SDKConst;
 
 public class FrameHelper {
 	
@@ -47,19 +46,21 @@ public class FrameHelper {
 		case SDKConst.PROTOCOL_GREEN:
 			int length = 0;
 			//先存起来
-			byte[] toSend = new byte[msgSize];
-			System.arraycopy(sendMsg, 0, toSend, 0, msgSize);
-			//加入魔术开头
-			System.arraycopy(GreenPacketEntity.MagicHeader, 0, sendMsg, 0, GreenPacketEntity.MagicHeader.length);
-			length += GreenPacketEntity.MagicHeader.length;
-			//加入长度
-			sendMsg[length] = (byte) msgSize;
-			length += 1;
+//			byte[] toSend = new byte[msgSize];
+//			System.arraycopy(sendMsg, 0, toSend, 0, msgSize);
+//			//加入魔术开头
+//			System.arraycopy(GreenPacketEntity.MagicHeader, 0, sendMsg, 0, GreenPacketEntity.MagicHeader.length);
+//			length += GreenPacketEntity.MagicHeader.length;
+//			//加入长度
+//			sendMsg[length] = (byte) msgSize;
+//			length += 1;
 			//再拷入内容
-			System.arraycopy(toSend, 0, sendMsg, length, msgSize);
-			length += msgSize;
+//			System.arraycopy(toSend, 0, sendMsg, length, msgSize);
+//			length += msgSize;
 			
-			return length;
+//			return length;
+			//15-1-13 由于协议改动，此处直接返回，不加魔术头和长度
+			return msgSize;
 		default:
 			return -1;
 		}
@@ -100,20 +101,21 @@ public class FrameHelper {
 			break;
 			
 		case SDKConst.PROTOCOL_GREEN:
-			byte[] magicHeader = new byte[GreenPacketEntity.MagicHeader.length];
-			Arrays.fill(magicHeader, (byte) 0xff);
+//			byte[] magicHeader = new byte[GreenPacketEntity.MagicHeader.length];
+//			Arrays.fill(magicHeader, (byte) 0xff);
 			//处理魔术开头
-			in.read(magicHeader, 0, GreenPacketEntity.MagicHeader.length);
-			if (Arrays.equals(magicHeader, GreenPacketEntity.MagicHeader)) {
+//			in.read(magicHeader, 0, GreenPacketEntity.MagicHeader.length);
+//			if (Arrays.equals(magicHeader, GreenPacketEntity.MagicHeader)) {
 //				recvMsgSize += 5;	抛弃魔术开头和长度byte
 //				System.arraycopy(magicHeader, 0, recvMsg, 0, 5);
 
-				int remainLen = in.read(); 
+//				int remainLen = in.read(); 
+				int remainLen = SDKConst.PROTOCOL_GREEN_PACKET_BYTES;  //protocol v0.2定义固定长度
 //				recvMsgSize += 1;
 				
 				in.read(recvMsg, 0, remainLen);
 				recvMsgSize += remainLen;
-			}
+//			}
 			break;
 		default:
 			break;

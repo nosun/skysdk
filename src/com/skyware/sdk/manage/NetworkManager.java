@@ -1,8 +1,6 @@
 package com.skyware.sdk.manage;
 
-import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.net.UnknownHostException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -16,24 +14,29 @@ import android.net.wifi.WifiManager;
 import android.os.Parcelable;
 import android.util.Log;
 
+import com.skyware.sdk.api.SDKConfig;
+import com.skyware.sdk.api.SDKConst;
+import com.skyware.sdk.api.SkySDK;
 import com.skyware.sdk.callback.IBizCallback;
 import com.skyware.sdk.callback.INetCallback;
 import com.skyware.sdk.consts.ErrorConst;
-import com.skyware.sdk.consts.SDKConst;
 import com.skyware.sdk.consts.SocketConst;
 import com.skyware.sdk.entity.CmdInfo;
+import com.skyware.sdk.entity.DeviceInfo;
+import com.skyware.sdk.entity.DeviceInfo.LocalNetStat;
 import com.skyware.sdk.packet.InPacket;
 import com.skyware.sdk.packet.OutPacket;
 import com.skyware.sdk.packet.entity.PacketEntity;
-import com.skyware.sdk.packet.entity.PacketHelper;
 import com.skyware.sdk.packet.entity.PacketEntity.DevStatus;
 import com.skyware.sdk.packet.entity.PacketEntity.PacketType;
+import com.skyware.sdk.packet.entity.PacketHelper;
 import com.skyware.sdk.packet.entity.ProtocolHelper;
+import com.skyware.sdk.socket.IOHandler;
 import com.skyware.sdk.util.ArrayUtil;
 
 public class NetworkManager {
 
-//	//饿汉式单例
+	//饿汉式单例
 //	private static NetworkManager mInstance = new NetworkManager();
 //	public static NetworkManager getInstace() {
 //		return mInstance;
@@ -53,12 +56,15 @@ public class NetworkManager {
 	/** android 网络状态变化监听 */
 	BroadcastReceiver mNetworkChangeReceiver;
 	
-	/**	业务层回调 */
+	/**	业务层回调（上层） */
 	IBizCallback mBizCallback;
 	
 	/** 网络层接口（本层）*/
 	INetCallback mNetCallback;
-	
+
+	public INetCallback getNetCallback() {
+		return mNetCallback;
+	}
 	/** TCP和UDP通信对象 */
 	TCPCommunication mTcpComm;
 	UDPCommunication mUdpComm;
@@ -78,79 +84,115 @@ public class NetworkManager {
         return mSn.incrementAndGet();
     }
 
-	/**	发送包缓存 SN-Packet */
+    /* ---------------- 缓存 --------------- */
+	/**	发送包缓存 Sn - Packet */
 	private ConcurrentHashMap<Integer, OutPacket> mSendPacketMap;
-
+	
+	/**	接收设备状态推送缓存 Sn - DevStatus */
+	private ConcurrentHashMap<Integer, InPacket> mRecvStatusMap;
+	
+	/** 现有内网中有效的设备表 Key - DeviceInfo */
+	private ConcurrentHashMap<String, DeviceInfo> mLocalDevMap;
+	
 	public void addOutPacket(OutPacket packet) {
-		if (packet == null) {
-			return;
+		if (packet != null && mSendPacketMap != null) {
+			mSendPacketMap.put(packet.getSn(), packet);
 		}
-		mSendPacketMap.put(packet.getSn(), packet);
 	}
 	public OutPacket findAndDelSourcePacket(int sn) {
-		OutPacket packet = mSendPacketMap.remove(sn);
+		OutPacket packet = null;
+		if (mSendPacketMap != null) {
+			packet = mSendPacketMap.remove(sn);
+		}
 		return packet;
 	}
 	public OutPacket findSourcePacket(int sn) {
-		OutPacket packet = mSendPacketMap.get(sn);
+		OutPacket packet = null;
+		if (mSendPacketMap != null) {
+			packet = mSendPacketMap.get(sn);
+		}
 		return packet;
 	}
-	
-	/** 现有可访问设备的地址映射表 Mac-IpAddr */
-	private ConcurrentHashMap<Long, InetAddress> mDeviceAddrMap;
-	
-	/** 现有可访问设备的协议（厂家）类型映射表 Mac-ProtocolType */
-	private ConcurrentHashMap<Long, Integer> mDeviceProtocolMap;
-	
-	
-	private void cleanDeviceMap() {
-		mDeviceAddrMap.clear();
-		mDeviceProtocolMap.clear();
+
+	/**
+	 *	增加状态包缓存
+	 *
+	 *	@param sn
+	 *	@return false -- sn已经存在  true -- sn不存在
+	 */
+	public boolean addStatusPacket(int sn, InPacket packet) {
+		boolean isFound = false;
+		if (mRecvStatusMap != null) {
+			InPacket oldpacket = mRecvStatusMap.get(sn);
+			if (oldpacket != null) {	//got
+				long recvTime = oldpacket.getReceiveTime();
+				//判断是否超时 防止sn溢出冲突
+				if(recvTime != 0 && System.currentTimeMillis() - recvTime < SDKConst.TIMEOUT_PUSH_STATUS){
+					isFound = true;
+				}
+			}
+			if (!isFound) {
+				mRecvStatusMap.put(sn, packet);
+				return true;
+			} 
+		}
+		return false;
 	}
 	
+	
 	/**
-	 *	初始化资源
+	 *	初始化
 	 */
 	private void init(){
 		mSendPacketMap = new ConcurrentHashMap<Integer, OutPacket>();
-		mDeviceAddrMap = new ConcurrentHashMap<Long, InetAddress>();
-		mDeviceProtocolMap = new ConcurrentHashMap<Long, Integer>();
+		mLocalDevMap = new ConcurrentHashMap<String, DeviceInfo>();
+		mRecvStatusMap = new ConcurrentHashMap<Integer, InPacket>();
 		
 		mTcpComm = new TCPCommunication(mNetCallback);
 		mUdpComm = new UDPCommunication(mNetCallback);
 		
 		registNetworkReceiver();
-		
-		if (SkySDK.getConfig().isApMode()) {
-			initApInfo();
-		}
 	}
 	
 	/**
-	 *	释放资源
+	 *	清空资源
 	 */
-	public void finallize(){
+	public void clear(){
 		
-		mSendPacketMap = null;
-		mDeviceAddrMap = null;
+		//TODO 判断是否需要清空
+		mLocalDevMap.clear();
+		mSendPacketMap.clear();
+		mRecvStatusMap.clear();
 		
 		mUdpComm.finallize();
 		mTcpComm.finallize();
+	}
+	
+	/**
+	 *	释放对象
+	 */
+	public void finallize(){
+		
+		clear();
+		
+		mSendPacketMap = null;
+		mLocalDevMap = null;
+		
 		mTcpComm = null;
 		mUdpComm = null;
 		
 		unregistNetworkReceiver();
 	}
 	
-	private void initApInfo() {
-		try {
-			mDeviceAddrMap.put(SDKConst.AP_MAC_LONG, 
-					InetAddress.getByName(SDKConst.PROTOCOL_GREEN_WIFI_AP_IP));
-			mDeviceProtocolMap.put(SDKConst.AP_MAC_LONG, SDKConst.PROTOCOL_GREEN);
-		} catch (UnknownHostException e) {
-			e.printStackTrace();
-		}		
-	}
+//	private void initApInfo() {
+//		try {
+//			mDeviceAddrMap.put(SDKConst.AP_MAC_LONG, 
+//					InetAddress.getByName(SkySDK.getConfig().getApIp()));
+//			mDeviceProtocolMap.put(SDKConst.AP_MAC_LONG, SDKConst.PROTOCOL_GREEN);
+//		} catch (UnknownHostException e) {
+//			e.printStackTrace();
+//		}		
+//	}
 	
 	/**
 	 *	发送和接收广播
@@ -171,46 +213,116 @@ public class NetworkManager {
 	
 	
 	/**
-	 *	开启新连接
+	 *	开启新连接	通过devKey连接
 	 *
-	 *	@param deviceMac
+	 *	@param deviceKey
 	 *	@param isPersist
 	 *	@return false -- 尚未发现该设备，或者建立TCP连接线程失败
 	 */
-	public boolean startNewConnect(long deviceMac, boolean isPersist) {
-		InetAddress targetIp = mDeviceAddrMap.get(deviceMac);
-		int targetProtocol = mDeviceProtocolMap.get(deviceMac);
-		if (targetIp == null || targetProtocol == SDKConst.PROTOCOL_UNKNOWN) {
+	public boolean startConnect(String deviceKey, boolean isPersist) {
+		DeviceInfo devInfo = mLocalDevMap.get(deviceKey);
+		if (devInfo == null || devInfo.getIp() == null ||
+				devInfo.getIp().equals("") || devInfo.getProtocol() == SDKConst.PROTOCOL_UNKNOWN) {
 			return false;
 		}
-		InetSocketAddress targetAddr = ProtocolHelper.getSocketAddr(targetIp, targetProtocol);
+		InetSocketAddress targetAddr = ProtocolHelper.getSocketAddr(devInfo.getIp(), devInfo.getProtocol());
 		
-		if (ArrayUtil.contains(SDKConst.PROTOCOL_TCP_SET, targetProtocol)){
-			return mTcpComm.startNewTCPTask(deviceMac, targetAddr, isPersist) != null;
-		} else if (ArrayUtil.contains(SDKConst.PROTOCOL_UDP_SET, targetProtocol)) {
-			return mUdpComm.startNewUdpKeepAlive(deviceMac, targetAddr);
-		}
-		return false;
-	}
-	
-	
-	/**
-	 *	断开已有连接
-	 *
-	 *	@param deviceMac
-	 *	@return
-	 */
-	public boolean stopConnect(long deviceMac) {
-		int targetProtocol = mDeviceProtocolMap.get(deviceMac);
-		
-		if (ArrayUtil.contains(SDKConst.PROTOCOL_TCP_SET, targetProtocol)){
-			return mTcpComm.stopTCPTask(deviceMac);
-		} else if (ArrayUtil.contains(SDKConst.PROTOCOL_UDP_SET, targetProtocol)) {
-			return mUdpComm.stopUdpKeepAlive(deviceMac);
+		if (ProtocolHelper.isUseTcp(devInfo.getProtocol())) {
+			return startConnect(targetAddr, deviceKey, true, isPersist);
+		} else if (ProtocolHelper.isUseUdp(devInfo.getProtocol())) {
+			return startConnect(targetAddr, deviceKey, false, isPersist);
 		}
 		return false;
 	}
 
+	// Ap 连接， 直接绕过Local检测
+	public boolean startConnectAp(String key, String ip, int port, boolean isPersist) {
+		InetSocketAddress targetAddr = new InetSocketAddress(ip, port);
+		return startConnect(targetAddr, key, true, isPersist);
+	}
+
+	public boolean stopConnectAp(String key) {
+		return mTcpComm.stopTCPTask(key);
+	}     
+	@Deprecated
+	public boolean sendPacketToAp(String key, PacketType type, CmdInfo cmd, int sn, boolean isPersist) {
+	
+		OutPacket packet = null;
+		switch (type) {
+		case DEVCOMMAND:
+			packet = PacketHelper.getDevCmdPacket(sn, cmd.getData(), key, SDKConst.PROTOCOL_GREEN);
+			break;
+			//TODO 其他Packet
+		case DEVCHECK:
+			packet = PacketHelper.getDevCheckPacket(sn, key, SDKConst.PROTOCOL_GREEN);
+			break;
+		default:
+			break;
+		}
+		
+		InetSocketAddress targetAddr = new InetSocketAddress("192.168.1.1", 502);
+		
+		if (packet != null) {
+			packet.setTargetAddr(targetAddr);
+			packet.setSendTime(System.currentTimeMillis());
+			packet.setTargetKey(key);
+			if (isPersist) {
+				packet.setFlag(OutPacket.TAG_TCP_PERSIST);
+			}	
+			
+			// 加入到发送缓存
+//			addOutPacket(packet);
+			
+			mTcpComm.sendPacketAsync(packet);
+			
+			return true;
+		}
+		return false;
+	}
+	
+	/**
+	 *	开启新连接 主动通过ip建立连接
+	 *
+	 *	@param targetAddr	目标设备addr
+	 *	@param devKey		目标设备key
+	 *	@param tcpOrUdp		true -- TCP  false -- UDP
+	 *	@param isPersist
+	 *	@return false -- 建立TCP连接线程失败
+	 */ 
+	public boolean startConnect(InetSocketAddress targetAddr, String devKey, 
+										boolean tcpOrUdp, boolean isPersist) {
+		if (tcpOrUdp) {
+			return mTcpComm.startTCPTask(devKey, targetAddr, isPersist) != null;
+		} else {
+			return mUdpComm.startNewUdpTask(devKey, targetAddr, isPersist);
+		}
+	}
+	
+	/**
+	 *	断开已有连接
+	 *
+	 *	@param deviceKey
+	 *	@return
+	 */
+	public boolean stopConnect(String deviceKey) {
+		if (mLocalDevMap == null) {
+			return false;
+		}
+		DeviceInfo devInfo = mLocalDevMap.get(deviceKey);
+		if (devInfo == null || devInfo.getIp() == null ||
+				devInfo.getIp().equals("") || devInfo.getProtocol() == SDKConst.PROTOCOL_UNKNOWN) {
+			return false;
+		}
+		
+		if (ArrayUtil.contains(SDKConst.PROTOCOL_TCP_SET, devInfo.getProtocol())){
+			return mTcpComm.stopTCPTask(deviceKey);
+		} else if (ArrayUtil.contains(SDKConst.PROTOCOL_UDP_SET, devInfo.getProtocol())) {
+			return mUdpComm.stopUdpTask(deviceKey);
+		}
+		return false;
+	}                   
+	
+	
 	/**
 	 *	断开所有已有连接
 	 *
@@ -222,36 +334,37 @@ public class NetworkManager {
 	/**
 	 *	向设备发送报文（TCP）
 	 *
-	 *	@param deviceMac	目标设备Mac
+	 *	@param deviceKey	目标设备Key
 	 *	@param packet		发送包
 	 *	@param isPersist	是否保持长连接
 	 *	@return false -- 不存在该设备（设备已经不在局域网内）
 	 */
-	public boolean sendPacketToDevice(long deviceMac, PacketType type, CmdInfo cmd, int sn, boolean isPersist) {
+	public boolean sendPacketToDevice(String deviceKey, PacketType type, CmdInfo cmd, int sn, boolean isPersist) {
 //		packet.setSn(getSn());	在Biz中生成sn
-		InetAddress targetIp = mDeviceAddrMap.get(deviceMac);
-		int targetProtocol = mDeviceProtocolMap.get(deviceMac);
-		if (targetIp == null || targetProtocol == SDKConst.PROTOCOL_UNKNOWN) {
+		DeviceInfo devInfo = mLocalDevMap.get(deviceKey); 
+		if (devInfo == null || devInfo.getIp() == null ||
+				devInfo.getIp().equals("") || devInfo.getProtocol() == SDKConst.PROTOCOL_UNKNOWN) {
 			return false;
 		}
+		
 		OutPacket packet = null;
 		switch (type) {
 		case DEVCOMMAND:
-//DEBUG	 	packet = PacketHelper.getDevCmdPacket(sn, cmd.wrapDevData(targetProtocol), deviceMac, targetProtocol);
-			packet = PacketHelper.getDevCmdPacket(sn, cmd.getData(), deviceMac, targetProtocol);
+//DEBUG	 	packet = PacketHelper.getDevCmdPacket(sn, cmd.wrapDevData(targetProtocol), deviceKey, targetProtocol);
+			packet = PacketHelper.getDevCmdPacket(sn, cmd.getData(), deviceKey, devInfo.getProtocol());
 			break;
 			//TODO 其他Packet
 		case DEVCHECK:
-			packet = PacketHelper.getDevCheckPacket(sn, deviceMac, targetProtocol);
+			packet = PacketHelper.getDevCheckPacket(sn, deviceKey, devInfo.getProtocol());
 			break;
 		default:
 			break;
 		}
 		
 		if (packet != null) {
-			packet.setTargetAddr(ProtocolHelper.getSocketAddr(targetIp, targetProtocol));
+			packet.setTargetAddr(ProtocolHelper.getSocketAddr(devInfo.getIp(), devInfo.getProtocol()));
 			packet.setSendTime(System.currentTimeMillis());
-			packet.setTargetMac(deviceMac);
+			packet.setTargetKey(deviceKey);
 			if (isPersist) {
 				packet.setFlag(OutPacket.TAG_TCP_PERSIST);
 			}	
@@ -259,34 +372,36 @@ public class NetworkManager {
 			// 加入到发送缓存
 			addOutPacket(packet);
 			
-			if (ArrayUtil.contains(SDKConst.PROTOCOL_TCP_SET, targetProtocol)){
+			if (ArrayUtil.contains(SDKConst.PROTOCOL_TCP_SET, devInfo.getProtocol())){
 				// TCP连接 异步发送
 				mTcpComm.sendPacketAsync(packet);
-			} else if (ArrayUtil.contains(SDKConst.PROTOCOL_UDP_SET, targetProtocol)) {
+			} else if (ArrayUtil.contains(SDKConst.PROTOCOL_UDP_SET, devInfo.getProtocol())) {
 				// UDP 异步发送
 				mUdpComm.sendPacketAsync(packet);
 			}
+			
+			return true;
 		}
-		
-		return true;
+		return false;
 	}
 	
 	
 	/**
 	 *	短连接切换长连接
 	 */
-	public boolean switchTCPPesist(long deviceMac) {
-		return mTcpComm.setTCPPersist(deviceMac, true);
+	public boolean switchTCPPesist(String deviceKey) {
+		return mTcpComm.setTCPPersist(deviceKey, true);
 	}
 	
 	/**
 	 *	长连接切换短连接
 	 */
-	public boolean switchTCPShort(long deviceMac) {
-		return mTcpComm.setTCPPersist(deviceMac, false);
+	public boolean switchTCPShort(String deviceKey) {
+		return mTcpComm.setTCPPersist(deviceKey, false);
 	}
 	
 
+	
 	
 	/**
 	 *	网络层回调
@@ -302,22 +417,34 @@ public class NetworkManager {
 		}
 		
 		@Override
-		public void onConnectTCPSuccess(long mac) {
+		public void onConnectMqttError(ErrorConst errType, String errMsg) {
+			// TODO Auto-generated method stub
+			
+		}
+		
+		@Override
+		public void onConnectTCPSuccess(IOHandler h, String key) {
 			if (mBizCallback != null) {
-				mBizCallback.onConnectDeviceSuccess(mac);
+				// 改变设备的网络状态为内网连接
+				DeviceInfo devInfo = mLocalDevMap.get(key);
+				if (devInfo != null) {
+					devInfo.setLocalNetStat(LocalNetStat.CONNECTED);
+//					mBizCallback.on
+				}
+				mBizCallback.onConnectDeviceSuccess(key);
 			}
 		}
 		
 		@Override
-		public void onConnectTCPError(long mac, ErrorConst errType, String errMsg) {
+		public void onConnectTCPError(IOHandler h, String key, ErrorConst errType, String errMsg) {
 			if (mBizCallback != null) {
-				mBizCallback.onConnectDeviceError(mac, errType, errMsg);
+				// TODO 重连判断, RECONN or BUSY
+				mBizCallback.onConnectDeviceError(key, errType, errMsg);
 			}
 		}
-
 		
 		@Override
-		public void onReceiveUDP(InPacket packet) {
+		public void onReceiveUDP(IOHandler h, InPacket packet) {
 			if (mBizCallback != null) {
 	
 				int protocol = ProtocolHelper.getProtocolWithPort(packet.getSourceAddr().getPort());
@@ -334,35 +461,46 @@ public class NetworkManager {
 				switch (type) {
 				case DEVFIND_ACK:
 					PacketEntity.DevFind.Ack ack = PacketHelper.resolveDevFindAck(packet, protocol);
-					if (mDeviceAddrMap!=null && ack!=null) {
-						if (mDeviceAddrMap.containsKey(ack.getMac()) && mDeviceAddrMap.get(ack.getMac()) != null) {
-	//						String oldIp = mDeviceAddrMap.get(ack.getMac()).toString().substring(1);
-							InetAddress oldIp = mDeviceAddrMap.get(ack.getMac());
-							//如果IP变更，则更新Map
-	//						if ( !oldIp.equals(ack.getIp()) ) {
-							if ( !oldIp.equals(packet.getSourceAddr()) ) {
-								mDeviceAddrMap.remove(ack.getMac());
-								mDeviceAddrMap.put(ack.getMac(), packet.getSourceAddr().getAddress());
+					if (mLocalDevMap!=null && ack!=null) {
+						String devKey = ack.getKey();
+						if (devKey != null) {
+							if(mLocalDevMap.containsKey(devKey) && mLocalDevMap.get(devKey) != null 
+									&& !mLocalDevMap.get(devKey).equals("")) {
+								// 现有设备ip变化
+//								String oldIp = mDeviceAddrMap.get(ack.getKey()).toString().substring(1);
+								DeviceInfo devInfo = mLocalDevMap.get(ack.getKey());
+								String oldIp = devInfo.getIp();
+								String newIp = packet.getSourceAddr().getAddress().getHostAddress();
+								// 更新ip
+								if (oldIp != null && newIp != null && !oldIp.equals(newIp) ) {
+									devInfo.setIp(newIp);
+								}
+							} else {	//发现新设备
+//								mDeviceAddrMap.put(ack.getKey(), packet.getSourceAddr().getAddress());
+//								mDeviceProtocolMap.put(ack.getKey(), protocol);
+								DeviceInfo newDevInfo = new DeviceInfo();
+								newDevInfo.setMac(ack.getKey());
+								newDevInfo.setIp(packet.getSourceAddr().getAddress().getHostAddress());
+								newDevInfo.setProtocol(protocol);
+								newDevInfo.setDevType(ProtocolHelper.getDevType(protocol));
+								
+								mLocalDevMap.put(devKey, newDevInfo);
+								//TODO 设备类型的判断应该由协议增加一个字段来判断
+								mBizCallback.onDiscoverNewDevice(newDevInfo);
 							}
-							
-						} else {	//发现新设备
-							mDeviceAddrMap.put(ack.getMac(), packet.getSourceAddr().getAddress());
-							mDeviceProtocolMap.put(ack.getMac(), protocol);
-							
-							//TODO 设备类型的判断应该由协议增加一个字段来判断
-							mBizCallback.onDiscoverNewDevice(ack.getMac(), packet.getSourceAddr().getAddress().toString().substring(1), 
-									protocol, SDKConst.PROTOCOL_DEV_TYPE[protocol]);
-						}
+						} 
 					}
 					break;
 				case DEVCOMMAND_ACK:
 					OutPacket oldPacket = findAndDelSourcePacket(packet.getSn());
 					if (oldPacket != null) {
-						mBizCallback.onSendCmdSuccess(oldPacket.getTargetMac(), oldPacket.getSn());
+						mBizCallback.onSendCmdSuccess(oldPacket.getTargetKey(), oldPacket.getSn());
 					
 						//博联插座特殊逻辑：命令ack即为状态上报
-						DevStatus devStatus1 = PacketHelper.resolveDevStatPacket(packet, protocol);
-						mBizCallback.onRecvDevStatus(devStatus1);
+						if (protocol == SDKConst.PROTOCOL_BROADLINK) {
+							DevStatus devStatus1 = PacketHelper.resolveDevStatPacket(packet, protocol);
+							mBizCallback.onRecvDevStatus(devStatus1);
+						}
 					}
 					break;
 				case DEVSTATUS:
@@ -381,12 +519,12 @@ public class NetworkManager {
 		}
 
 		@Override
-		public void onReceiveTCP(InPacket packet) {
+		public void onReceiveTCP(IOHandler h, InPacket packet) {
 			if (mBizCallback != null) {
 				int protocol = ProtocolHelper.getProtocolWithPort(packet.getSourceAddr().getPort());
 				//解析TCP的sn和Type
 				int sn = PacketHelper.resolvePacketSn(packet, protocol);
-				if (sn >= 0) {
+				if (sn > 0) {
 					packet.setSn(sn);
 				}
 				
@@ -403,13 +541,17 @@ public class NetworkManager {
 						
 						OutPacket oldPacket = findAndDelSourcePacket(packet.getSn());
 						if (oldPacket != null) {
-							mBizCallback.onSendCmdSuccess(oldPacket.getTargetMac(), oldPacket.getSn());
+							mBizCallback.onSendCmdSuccess(oldPacket.getTargetKey(), oldPacket.getSn());
 						}
 						break;
 					case DEVSTATUS:
+						// 如果包中无sn字段，直接上报
+						// 如果已经推送过，则不上报
+						if(packet.getSn() <= 0 || addStatusPacket(packet.getSn(), packet)){
+							DevStatus devStatus = PacketHelper.resolveDevStatPacket(packet, protocol);
+							mBizCallback.onRecvDevStatus(devStatus);
+						}
 						
-						DevStatus devStatus = PacketHelper.resolveDevStatPacket(packet, protocol);
-						mBizCallback.onRecvDevStatus(devStatus);
 						//TODO 发送ACK
 						
 						break;
@@ -423,41 +565,91 @@ public class NetworkManager {
 		}
 		
 		@Override
-		public void onReceiveTCPError(long mac, ErrorConst errType,
+		public void onReceivePushMqtt(String topicName, byte[] payload, int qos, boolean retained) {
+			InPacket packet = new InPacket();
+			packet.setContent(payload);
+			packet.setReceiveTime(System.currentTimeMillis());
+			
+			//TODO 根据什么来解析具体的协议？
+			int protocol = SDKConst.PROTOCOL_MOORE;
+			
+			//解析TCP的sn和Type
+			int sn = PacketHelper.resolvePacketSn(packet, protocol);
+			if (sn >= 0) {
+				packet.setSn(sn);
+			}
+			
+			PacketType type= PacketHelper.resolvePacketType(packet, protocol);
+			if (type != null) {
+				packet.setType(type);
+			
+				switch(type){
+				case HEARTBEAT_ACK:
+					//TODO 心跳回复处理
+					break;
+				case DEVCOMMAND_ACK:
+					OutPacket oldPacket = findAndDelSourcePacket(packet.getSn());
+					if (oldPacket != null) {
+						mBizCallback.onSendCmdSuccess(oldPacket.getTargetKey(), oldPacket.getSn());
+					}
+					break;
+				case NETSTATUS:
+					
+					break;
+				case DEVSTATUS:
+					// 如果已经推送过，则不上报
+					if(addStatusPacket(packet.getSn(), packet)){
+						DevStatus devStatus = PacketHelper.resolveDevStatPacket(packet, protocol);
+						if (devStatus != null) {
+							mBizCallback.onRecvDevStatus(devStatus);
+						}
+					}
+					//TODO 发送ACK
+					
+					break;
+				default:
+					break;
+				}
+			}
+			
+		}
+		
+		@Override
+		public void onReceiveTCPError(IOHandler h, String key, ErrorConst errType,
 				String errMsg) {
 			// TODO Auto-generated method stub
 			
 		}
 
 		@Override
-		public void onReceiveUDPError(long mac, ErrorConst errType,
+		public void onReceiveUDPError(IOHandler h, String key, ErrorConst errType,
 				String errMsg) {
 			// TODO Auto-generated method stub
 			
 		}
 		
 		@Override
-		public void onSendTCPFinished(OutPacket packet) {
+		public void onSendTCPFinished(IOHandler h, OutPacket packet) {
 			mBizCallback.onSendTCPPacket(packet);	//for debug
 		}
 
 		@Override
-		public void onSendUDPFinished(OutPacket packet) {
+		public void onSendUDPFinished(IOHandler h, OutPacket packet) {
 //			mBizCallback.onSendTCPPacket(packet);	//for debug
 		}
 		
 		@Override
-		public void onSendError(OutPacket packet, ErrorConst errType,
+		public void onSendError(IOHandler h, OutPacket packet, ErrorConst errType,
 				String errMsg) {
 			if (mBizCallback != null) {
-				mBizCallback.onSendCmdError(packet.getTargetMac(), packet.getSn(), errType, errMsg);
+				mBizCallback.onSendCmdError(packet.getTargetKey(), packet.getSn(), errType, errMsg);
 			}
 		}
 
 		@Override
-		public void onCloseTCP(long mac) {
+		public void onCloseTCP(IOHandler h, String key) {
 			if (mBizCallback != null) {
-				mBizCallback.onDeviceDisconnected(mac, ErrorConst.ESOCK_BIO_CLOSE_BY_SELF, "Socket close by remote!");
+				mBizCallback.onDeviceDisconnected(key, ErrorConst.ESOCK_BIO_CLOSE_BY_SELF, "Socket close by remote!");
 			} 
 		}
 		
@@ -519,22 +711,21 @@ public class NetworkManager {
 //	                Log.e("WYF", "connect state: " + state);   
 	                switch (state){
 	                case CONNECTED:
-	                	if (SkySDK.getConfig().isApMode() == false) {
-	                		startBroadcaster();
-						}
+	                	SkySDK.resumeSDK(context);
 	                	break;
 	                case DISCONNECTED:
-	                	if (SkySDK.getConfig().isApMode() == false) {
-	                		stopBroadcaster();
-						}
-	                	stopAllConnects();
-	                	cleanDeviceMap();
+	                	SkySDK.pauseSDK();	//不能stop否则监听被注销
+//	                	if (SkySDK.getConfig().isApMode() == false) {
+//	                		stopBroadcaster();
+//						}
+//	                	stopAllConnects();
+//	                	cleanDeviceMap();
 	                	break;
 					default:
 						break;
 	                }
 
-	            }  
+	            }
 	        }  
 	        
 	    }

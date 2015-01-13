@@ -10,7 +10,7 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import com.skyware.sdk.consts.SDKConst;
+import com.skyware.sdk.api.SDKConst;
 import com.skyware.sdk.consts.SocketConst;
 import com.skyware.sdk.entity.DevData;
 import com.skyware.sdk.entity.IJsonDecoder;
@@ -22,6 +22,8 @@ public class MoorePacketEntity{
 	
 	public final static String cmdName = "cmd";
 	public final static String snName = "sn";
+	
+	public final static String netStatusName = "deviceOnline";
 	
 	public static int getMyProtocolType() {
 		return SDKConst.PROTOCOL_MOORE;
@@ -73,11 +75,10 @@ public class MoorePacketEntity{
 			@Override
 			public boolean byteDecoder(byte[] byteFillArray) {
 				// TODO 更严谨一些
-				String[] strSplit = new String(byteFillArray, 
-							Charset.forName(SocketConst.CHARSET_BROADCAST_CONTENT))
-						.split(",");
+				String[] strSplit = new String(byteFillArray).split(",");
 				ip = strSplit[0].trim();
-				if(setMac(ConvertUtil.macString2Long(strSplit[1].trim()))){
+				if(ConvertUtil.macFormat(strSplit[1].trim()) != null){
+					setKey(ConvertUtil.macFormat(strSplit[1].trim()));
 					return true;
 				}
 				return false;
@@ -179,7 +180,7 @@ public class MoorePacketEntity{
 			}
 			@Override
 			public boolean byteDecoder(byte[] byteFillArray) {
-				String jsonStr = new String(byteFillArray, Charset.forName(SocketConst.CHARSET_TCP_CONTENT));
+				String jsonStr = new String(byteFillArray);
 				
 				try {
 					return jsonDecoder(new JSONObject(jsonStr));
@@ -289,7 +290,7 @@ public class MoorePacketEntity{
 			}
 			@Override
 			public boolean byteDecoder(byte[] byteFillArray) {
-				String jsonStr = new String(byteFillArray, Charset.forName(SocketConst.CHARSET_TCP_CONTENT));
+				String jsonStr = new String(byteFillArray);
 				try {
 					return jsonDecoder(new JSONObject(jsonStr));
 				} catch (JSONException e) {
@@ -335,11 +336,11 @@ public class MoorePacketEntity{
 				return false;
 			}
 			setSn(json.getInt(snName));
-			long mac = ConvertUtil.macString2Long(json.getString(macName));
-			if (mac == -1) {
+			String mac = ConvertUtil.macFormat(json.getString(macName));
+			if (mac == null || mac.equals("")) {
 				return false;
 			} else {
-				setMac(mac);
+				setKey(mac);
 			}
 			
 			JSONArray dataArr = json.getJSONArray(dataName);
@@ -364,8 +365,8 @@ public class MoorePacketEntity{
 			if (getSn() != -1) {
 				json.put(snName, getSn());
 			}
-			if (getMac() != -1) {
-				json.put(macName, ConvertUtil.macLong2String(getMac()));
+			if (getKey() != null && !getKey().equals("")) {
+				json.put(macName, ConvertUtil.macFormat(getKey()));
 			}
 			
 			if (getDevData() != null) {
@@ -377,7 +378,7 @@ public class MoorePacketEntity{
 		}
 		@Override
 		public boolean byteDecoder(byte[] byteFillArray) {
-			String jsonStr = new String(byteFillArray, Charset.forName(SocketConst.CHARSET_TCP_CONTENT));
+			String jsonStr = new String(byteFillArray);
 			try {
 				return jsonDecoder(new JSONObject(jsonStr));
 			} catch (JSONException e) {

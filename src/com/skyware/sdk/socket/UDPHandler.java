@@ -122,9 +122,9 @@ public abstract class UDPHandler extends BIOHandler{
 			mUDPSocket.send(mUDPSendPacket);
 			
 //			Log.e(this.getClass().getSimpleName(), "UDP send data lenth:" + mSendMsgSize);
-			Log.d(this.getClass().getSimpleName(), "UDP send data content:" + new String(packet.getContent() ,charset));
+			Log.d(this.getClass().getSimpleName(), "UDP send data content:" + new String(packet.getContent()));
 			
-			mSocketCallback.onSendFinished(packet);
+			mSocketCallback.onSendFinished(this, packet);
 			
 //			Log.d(this.getClass().getSimpleName(),"UDP send!");
 			
@@ -134,7 +134,7 @@ public abstract class UDPHandler extends BIOHandler{
 			throw e;
 		} catch (Exception e) {
 			e.printStackTrace();
-			mSocketCallback.onSendError(e, packet);
+			mSocketCallback.onSendError(this, e, packet);
 			return false;
 		}
 
@@ -167,10 +167,10 @@ public abstract class UDPHandler extends BIOHandler{
 			System.arraycopy(mUDPRecvPacket.getData(), 0, content, 0, mRecvMsgSize);
 			packet.setContent(content);
 					
-			Log.d(this.getClass().getSimpleName(), "UDP packet received, msg length :" + mRecvMsgSize + "msg content :" + new String(content, charset));
+			Log.d(this.getClass().getSimpleName(), "UDP packet received, msg length :" + mRecvMsgSize + "msg content :" + new String(content));
 			
 			//上报收到的packet
-			mSocketCallback.onReceive(packet);
+			mSocketCallback.onReceive(this, packet);
 			
 //			Log.e(this.getClass().getSimpleName(), "UDP received!");
 //			reset();		

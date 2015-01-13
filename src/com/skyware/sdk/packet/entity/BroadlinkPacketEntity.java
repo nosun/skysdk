@@ -7,7 +7,7 @@ import java.util.List;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import com.skyware.sdk.consts.SDKConst;
+import com.skyware.sdk.api.SDKConst;
 import com.skyware.sdk.entity.DevData;
 import com.skyware.sdk.entity.biz.DevDataBroadlink;
 import com.skyware.sdk.util.ConvertUtil;
@@ -80,7 +80,7 @@ public class BroadlinkPacketEntity {
 				byte[] byteMac = new byte[6];
 				System.arraycopy(byteFillArray, indexMac, byteMac, 0, 6);
 				
-				setMac(ConvertUtil.macByte2Long(byteMac));
+				setKey(ConvertUtil.macByte2String(byteMac));
 				return true;
 			}
 		}
@@ -89,18 +89,18 @@ public class BroadlinkPacketEntity {
 
 	public static class DevCmd extends PacketEntity.DevCmd {
 
-		private long mac;
+		private String key;
 		public DevCmd() {
 		}
-		public DevCmd(int sn, DevData data, long mac) {
+		public DevCmd(int sn, DevData data, String key) {
 			super(sn, data);
-			this.mac = mac;
+			this.key = key;
 		}
-		public long getMac() {
-			return mac;
+		public String getKey() {
+			return key;
 		}
-		public void setMac(long mac) {
-			this.mac = mac;
+		public void setKey(String key) {
+			this.key = key;
 		}
 
 
@@ -127,7 +127,7 @@ public class BroadlinkPacketEntity {
 					byte[] firstLine = new byte[]{
 							0x4d,(byte) 0xcf,0x00,0x00,0x11,0x27,0x6a,0x00};
 					byte[] snByte = ConvertUtil.snUnsignedShort2Byte(getSn());
-					byte[] macByte = ConvertUtil.macLong2Byte(getMac());
+					byte[] macByte = ConvertUtil.macString2Byte(getKey());
 					byte[] cmdType = CmdType.get(CMD_TYPE_ON);
 					
 					byte[] onTailor = new byte[]{
@@ -149,7 +149,7 @@ public class BroadlinkPacketEntity {
 					byte[] firstLine = new byte[]{
 							(byte) 0x8b,(byte) 0xcf,0x00,0x00,0x11,0x27,0x6a,0x00};
 					byte[] snByte = ConvertUtil.snUnsignedShort2Byte(getSn());
-					byte[] macByte = ConvertUtil.macLong2Byte(getMac());
+					byte[] macByte = ConvertUtil.macString2Byte(getKey());
 					byte[] cmdType = CmdType.get(CMD_TYPE_OFF);
 					
 					byte[] offTailor = new byte[]{
@@ -223,7 +223,7 @@ public class BroadlinkPacketEntity {
 			int macOffset = snOffset + 2;
 			byte[] macByte = new byte[6]; 
 			System.arraycopy(byteFillArray, macOffset, macByte, 0, 6);
-			setMac(ConvertUtil.macByte2Long(macByte));
+			setKey(ConvertUtil.macByte2String(macByte));
 			
 			int dataOffset = macOffset + 6;
 			byte[] dataByte = new byte[8]; 
@@ -253,8 +253,8 @@ public class BroadlinkPacketEntity {
 			if (getSn() != -1) {
 				json.put(snName, getSn());
 			}
-			if (getMac() != -1) {
-				json.put(macName, ConvertUtil.macLong2String(getMac()));
+			if (getKey() != null && !getKey().equals("")) {
+				json.put(macName, getKey());
 			}
 			
 			if (getDevData() != null) {

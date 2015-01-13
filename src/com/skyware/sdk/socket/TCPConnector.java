@@ -10,8 +10,8 @@ import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import android.util.Log;
 
+import com.skyware.sdk.api.SDKConst;
 import com.skyware.sdk.callback.ISocketCallback;
-import com.skyware.sdk.consts.SDKConst;
 import com.skyware.sdk.consts.SocketConst;
 import com.skyware.sdk.exception.SkySocketCloseByRemoteException;
 import com.skyware.sdk.exception.SkySocketUnstartedException;
@@ -25,8 +25,8 @@ public abstract class TCPConnector extends BIOHandler{
 	/** BIO TCP client socket */
 	protected Socket mSocket;
 	
-	/** Socket连接的设备Mac，用于修改HashMap */
-	protected long mac;
+	/** Socket连接的设备Key，用于修改HashMap */
+	protected String key;
 	
 	/** BIO TCP 接收的输入流 */
 	protected InputStream inputStream;
@@ -37,29 +37,28 @@ public abstract class TCPConnector extends BIOHandler{
 	/**
 	 * 构造函数I：指定address，建立新的socket连接
 	 */
-	public TCPConnector(InetSocketAddress targetAddress, ISocketCallback socketCallback, long mac) {
+	public TCPConnector(InetSocketAddress targetAddress, ISocketCallback socketCallback, String key) {
 		super();
 		this.mTargetAddress = targetAddress;
 		setSocketCallback(socketCallback);
-		this.setMac(mac);
+		setKey(key);
 	}
 	
 	/**
 	 * 构造函数II：复用指定的socket
 	 */
-	public TCPConnector(Socket socket, ISocketCallback socketCallback, long mac) {
+	public TCPConnector(Socket socket, ISocketCallback socketCallback, String key) {
 		super();
 		this.mSocket = socket;
 		setSocketCallback(socketCallback);
-		this.setMac(mac);
+		setKey(key);
 	}
 	
-	public long getMac() {
-		return mac;
+	public String getKey() {
+		return key;
 	}
-
-	public void setMac(long mac) {
-		this.mac = mac;
+	public void setKey(String key) {
+		this.key = key;
 	}
 	
 	/**
@@ -143,9 +142,9 @@ public abstract class TCPConnector extends BIOHandler{
 			outputStream.flush();//强制输出到socket文件，不驻留内存缓冲区
 			
 //			Log.e(this.getClass().getSimpleName(), "TCP send data lenth:" + mSendMsgSize);
-			Log.e(this.getClass().getSimpleName(), "TCP send! msg content:" + new String(packet.getContent(), charset));
+			Log.e(this.getClass().getSimpleName(), "TCP send! msg content:" + new String(packet.getContent()));
 
-			mSocketCallback.onSendFinished(packet);
+			mSocketCallback.onSendFinished(this, packet);
 			
 			return true;
 		} catch (SkySocketUnstartedException e) {
@@ -153,7 +152,7 @@ public abstract class TCPConnector extends BIOHandler{
 			throw e;
 		} catch (Exception e) {
 			e.printStackTrace();
-			mSocketCallback.onSendError(e, packet);
+			mSocketCallback.onSendError(this, e, packet);
 //			dispose();
 			return false;
 		}
@@ -172,8 +171,7 @@ public abstract class TCPConnector extends BIOHandler{
 			if (getReadTimeout() != readTimeout) {
 				setReadTimeout(readTimeout);
 			}
-			
-			Log.e(this.getClass().getSimpleName(), "start readStream!");
+//			Log.e(this.getClass().getSimpleName(), "start readStream!");
 			
 			int protocol = ProtocolHelper.getProtocolWithPort(mSocket.getPort());
 			//IO读 + 解帧
@@ -196,10 +194,10 @@ public abstract class TCPConnector extends BIOHandler{
 			System.arraycopy(mRecvBuf, 0, content, 0, mRecvMsgSize);
 			packet.setContent(content);
 		
-			Log.e(this.getClass().getSimpleName(), "TCP received! msg content :" + new String(content, charset));
+			Log.e(this.getClass().getSimpleName(), "TCP received! msg content :" + new String(content));
 			
 			//上报收到的packet
-			mSocketCallback.onReceive(packet);
+			mSocketCallback.onReceive(this, packet);
 			//reset();	
 			return true;
 		} catch (SkySocketUnstartedException e){

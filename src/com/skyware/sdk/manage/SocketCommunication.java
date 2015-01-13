@@ -49,8 +49,8 @@ public abstract class SocketCommunication {
 		mSendQueue = new ConcurrentLinkedQueue<OutPacket>();
 		
 		mSingleExecutor = new SingleExecutor();
-		mPacketSendTask = new PacketSendTask<Object>(this);
-		mPacketReportTask = new PacketReportTask<Object>(this);
+		mPacketSendTask = new PacketSendTask(this);
+		mPacketReportTask = new PacketReportTask(this);
 	}
     
 	
@@ -121,10 +121,10 @@ public abstract class SocketCommunication {
 	 * @param	packet
 	 * @return	void
 	 */
-	public void reportPacketSync(InPacket packet) {
+	public void reportPacketSync(IOHandler h, InPacket packet) {
 		if (packet == null || mNetCallback == null)
 			return;
-		onReceive(packet);
+		onReceive(h, packet);
 	}
 	
 	/**
@@ -134,10 +134,13 @@ public abstract class SocketCommunication {
 	 * @return	void
 	 * @Tips	synchronized方法
 	 */
-	public void reportPacketAsync(InPacket packet) {
-		if (packet == null || mNetCallback == null)
+	public void reportPacketAsync(IOHandler h, InPacket packet) {
+		if (packet == null || mNetCallback == null || mReceiveQueue == null)
 			return;
 		mReceiveQueue.offer(packet);
+		if(mPacketReportTask instanceof PacketReportTask){
+			((PacketReportTask) mPacketReportTask).setHandler(h);
+		}
 		mSingleExecutor.submit(mPacketReportTask);
 	}
 
@@ -176,13 +179,21 @@ public abstract class SocketCommunication {
 	 *
 	 */
 	public void finallize(){
-		mReceiveQueue = null;
-		mSendQueue = null;
+//		mReceiveQueue = null;
+//		mSendQueue = null;
+		if (mReceiveQueue != null) {
+			mReceiveQueue.clear();
+		}
+		if (mSendQueue != null) {
+			mSendQueue.clear();
+		}
 		
-		mSingleExecutor.dispose();
-		mSingleExecutor = null;
-		mPacketSendTask = null;
-		mPacketReportTask = null;
+		if (mSingleExecutor != null) {
+			mSingleExecutor.dispose();
+		}
+//		mSingleExecutor = null;
+//		mPacketSendTask = null;
+//		mPacketReportTask = null;
 	}
 	
 	/*
@@ -196,7 +207,7 @@ public abstract class SocketCommunication {
 	 * 
 	 * @param packet
 	 */
-	abstract public void onSendFinished(OutPacket packet);
+	abstract public void onSendFinished(IOHandler h, OutPacket packet);
 	
 	/**
 	 *	发送错误回调
@@ -205,10 +216,10 @@ public abstract class SocketCommunication {
 	 *	@param errType
 	 *	@param errMsg
 	 */
-	public void onSendError(OutPacket packet, ErrorConst errType, String errMsg) {
+	public void onSendError(IOHandler h, OutPacket packet, ErrorConst errType, String errMsg) {
 		if (mNetCallback == null)
 			return;
-		mNetCallback.onSendError(packet, errType, errMsg);
+		mNetCallback.onSendError(h, packet, errType, errMsg);
 	}
 	
 	/** 
@@ -216,7 +227,7 @@ public abstract class SocketCommunication {
 	 * 
 	 * @param packet
 	 */
-	abstract public void onReceive(InPacket packet);
+	abstract public void onReceive(IOHandler h, InPacket packet);
 	
 	/**
 	 *	接收错误回调

@@ -6,7 +6,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import com.skyware.sdk.manage.SocketCommunication;
 import com.skyware.sdk.packet.OutPacket;
 
-public class PacketSendTask<V> implements Callable<V>{
+public class PacketSendTask implements Callable<Object>{
 	private SocketCommunication mCommunication;
 	private AtomicInteger period = new AtomicInteger(0);	//两次任务之间的间隔，默认为0
 	
@@ -24,7 +24,7 @@ public class PacketSendTask<V> implements Callable<V>{
 		this.period.set(period);
 	}
 
-	public V call() throws Exception {
+	public Object call() throws Exception {
 		
 		OutPacket packet = mCommunication.dequeueSendQueue();
 		while (packet != null) {

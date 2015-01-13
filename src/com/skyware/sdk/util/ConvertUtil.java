@@ -2,11 +2,25 @@ package com.skyware.sdk.util;
 
 public class ConvertUtil {
 
+	// ------------------ Mac ------------------
+	public static String macFormat(String mac) {
+		if (mac == null || mac.equals("")) {
+			return null;
+		}
+		return mac.replaceAll("[-:：]", "").toUpperCase();
+	}
+
+	public static String macByte2String(byte[] b) {
+		return macLong2String(macByte2Long(b, false));
+	}
+	public static byte[] macString2Byte(String mac) {
+		return macLong2Byte(macString2Long(mac));
+	}
+	
 	public static String macLong2String(long mac) {
 		if (mac > 0XFFFFFFFFFFFFL) {
 			return null;
 		}
-
 		return Long.toHexString(mac).toUpperCase();
 	}
 
@@ -14,7 +28,6 @@ public class ConvertUtil {
 		if (!ValidateHelper.isMac(mac)) {
 			return -1;
 		}
-
 		return Long.parseLong(mac.replaceAll("[-:：]", ""), 16);
 	}
 
@@ -52,6 +65,7 @@ public class ConvertUtil {
 		return macByte;
 	}
 
+	// ----------------- SN --------------------
 	public static byte[] snUnsignedShort2Byte(int s) {
 		if (s < 0 || s > 65535) {
 			return null;

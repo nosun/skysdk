@@ -19,8 +19,8 @@ public class OutPacket extends Packet{
 	/** 包对应的类型 */
 	private PacketType type;
 
-	/** 包的发送目标设备MAC（广播包没有） */
-	private long targetMac;
+	/** 包的发送目标设备Key（广播包没有） */
+	private String targetKey;
 
 	/** 包发送目标的SocketAddress（广播包没有）*/
 	private InetSocketAddress targetAddr;
@@ -62,12 +62,12 @@ public class OutPacket extends Packet{
 		this.sendTime = receiveTime;
 	}
 
-	public long getTargetMac() {
-		return targetMac;
+	public String getTargetKey() {
+		return targetKey;
 	}
 
-	public void setTargetMac(long targetMac) {
-		this.targetMac = targetMac;
+	public void setTargetKey(String targetKey) {
+		this.targetKey = targetKey;
 	}
 
 	public InetSocketAddress getTargetAddr() {

@@ -2,7 +2,7 @@ package com.skyware.sdk.thread;
 
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 
-import com.skyware.sdk.consts.SDKConst;
+import com.skyware.sdk.api.SDKConst;
 
 public class ThreadPoolManager {
 	
@@ -11,6 +11,9 @@ public class ThreadPoolManager {
 		mThreadPool =  new ScheduledThreadPoolExecutor(coreThreadNum);
 	}
 	public static ThreadPoolManager getInstance() {
+		if (mInstance == null) {
+			mInstance = new ThreadPoolManager();
+		}
 		return mInstance;
 	}
 	
@@ -35,8 +38,17 @@ public class ThreadPoolManager {
 	}
 	
 	public void finallize() {
-		mThreadPool.shutdownNow();
-		mThreadPool = null;
-		coreThreadNum = 0;
+		if (mThreadPool != null) {
+			mThreadPool.shutdownNow();
+			mThreadPool = null;
+			coreThreadNum = 0;
+		}
+	}
+	
+	public void shutdownAll() {
+		if (mThreadPool != null) {
+			mThreadPool.shutdownNow();
+			mThreadPool = null;
+		}
 	}
 }

@@ -25,9 +25,10 @@ public interface ISocketCallback {
 	/**
      * 	接收到数据包的回调
      * 
+     * 	@param h	handler自身
      * 	@param packet	接收的数据包
      */
-    public void onReceive(InPacket packet);
+    public void onReceive(IOHandler h, InPacket packet);
 
     /**
      *	接收数据包出现异常的回调
@@ -40,17 +41,19 @@ public interface ISocketCallback {
     /**
      * 	当发送数据完成回调
      * 
+     * 	@param h	handler自身
      * 	@param packet	发送的数据包
      */
-    public void onSendFinished(OutPacket packet);
+    public void onSendFinished(IOHandler h, OutPacket packet);
 
     /**
      * 	当发送数据出现异常的回调
      * 
+     * 	@param h	handler自身
      * 	@param e		捕捉到的异常
      * 	@param packet 	发送的数据包
      */
-    public void onSendError(Exception e, OutPacket packet);
+    public void onSendError(IOHandler h, Exception e, OutPacket packet);
     
     /**
      * 	当释放资源成功的回调

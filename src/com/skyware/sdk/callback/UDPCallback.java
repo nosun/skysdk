@@ -45,12 +45,12 @@ public class UDPCallback implements ISocketCallback{
 	}
 
 	@Override
-	public void onReceive(InPacket packet) {
+	public void onReceive(IOHandler h, InPacket packet) {
 		// 如果是selector监听线程，则使用异步上报，保证监听实时性，否则采用同步上报
 		if (Thread.currentThread().getName().equals("TCPSelector"))
-			mCommunication.reportPacketAsync(packet);
+			mCommunication.reportPacketAsync(h, packet);
 		else
-			mCommunication.reportPacketSync(packet);
+			mCommunication.reportPacketSync(h, packet);
 	}
 
 	@Override
@@ -72,12 +72,12 @@ public class UDPCallback implements ISocketCallback{
 	}
 
 	@Override
-	public void onSendFinished(OutPacket packet) {
-		mCommunication.onSendFinished(packet);
+	public void onSendFinished(IOHandler h, OutPacket packet) {
+		mCommunication.onSendFinished(h, packet);
 	}
 
 	@Override
-	public void onSendError(Exception e, OutPacket packet) {
+	public void onSendError(IOHandler h, Exception e, OutPacket packet) {
 		ErrorConst errType = null;
 		//SocketChannel.write()抛出的Execption
 		
@@ -88,7 +88,7 @@ public class UDPCallback implements ISocketCallback{
 			errType = ErrorConst.EUNKNOWN;
 		}
 
-		mCommunication.onSendError(packet, errType, e.getLocalizedMessage());
+		mCommunication.onSendError(h, packet, errType, e.getLocalizedMessage());
 	}
 
 	@Override

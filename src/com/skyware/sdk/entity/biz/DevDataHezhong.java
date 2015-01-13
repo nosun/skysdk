@@ -40,13 +40,15 @@ public class DevDataHezhong extends DevData implements IMCUCoder<JSONArray>{
 	public static enum MODE{
 		MANUAL,
 		AUTO,
-		SLEEP
+		SLEEP,
+		SAVING
 	}
 	@SuppressWarnings("serial")
 	public static final HashMap<MODE, String> MODE_MAP = new HashMap<DevDataHezhong.MODE, String>(){{
 		put(MODE.MANUAL, VALUE_MODE_MANUAL);
 		put(MODE.AUTO, VALUE_MODE_AUTO);
 		put(MODE.SLEEP, VALUE_MODE_SLEEP);
+		put(MODE.SAVING, VALUE_MODE_SAVING);
 	}};
 	
 	// 控制类 对应ON OFF
@@ -72,6 +74,7 @@ public class DevDataHezhong extends DevData implements IMCUCoder<JSONArray>{
 	public static final String VALUE_MODE_MANUAL 	= "0";
 	public static final String VALUE_MODE_AUTO 	= "1";	
 	public static final String VALUE_MODE_SLEEP 	= "2";	
+	public static final String VALUE_MODE_SAVING 	= "3";
 	
 	public static final String VALUE_TIMER_OFF 	= "0";
 	public static final String VALUE_TIMER_MIN 	= "1";
@@ -266,6 +269,7 @@ public class DevDataHezhong extends DevData implements IMCUCoder<JSONArray>{
 //			dataArray.put(KEY_PM25 + KV_DELIMITER + getPm25());
 //		}
 		
+//		return null;
 		return dataArray;
 	}
 	
@@ -284,7 +288,7 @@ public class DevDataHezhong extends DevData implements IMCUCoder<JSONArray>{
 				kv[i][0] = kv_temp[0];
 				kv[i][1] = kv_temp[1];
 			}
-	
+			
 			for (int i = 0; i < dataNum; i++) {
 				try {
 					if (kv[i][0].equals(KEY_POWER)) {
@@ -327,6 +331,22 @@ public class DevDataHezhong extends DevData implements IMCUCoder<JSONArray>{
 					// TODO: handle exception
 				}
 			}
+			
+//			如果是JsonObject
+//			setPower(mcuData.getString(KEY_POWER));
+//			setChildLock(mcuData.getString(KEY_CHILDLOCK));
+//			setUv(mcuData.getString(KEY_UV));
+//			setAnion(mcuData.getString(KEY_ANION));
+//			setMode(mcuData.getString(KEY_MODE));
+//			setTimer(mcuData.getString(KEY_TIMER));
+//			setFanSpeed(mcuData.getString(KEY_FANSPEED));
+//			setPower(mcuData.getString(KEY_POWER));
+//			setTemperature(mcuData.getString(KEY_TEMPHUM).substring(0, 2));
+//			setHumidity(mcuData.getString(KEY_TEMPHUM).substring(2, 4));
+//			setPm25(mcuData.getString(KEY_PM25).substring(0, 3));
+//			setPm25Level(mcuData.getString(KEY_PM25).substring(3, 4));
+//			setFilterRemainTime(mcuData.getString(KEY_FILTERTIME).substring(0, 4));
+//			setFilterRemainLevel(mcuData.getString(KEY_FILTERTIME).substring(4, 5));
 			
 //			for (String d: data) {
 //				if (d.equals(KV_POWER_ON)) {

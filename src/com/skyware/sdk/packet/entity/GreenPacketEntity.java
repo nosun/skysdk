@@ -3,7 +3,7 @@ package com.skyware.sdk.packet.entity;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import com.skyware.sdk.consts.SDKConst;
+import com.skyware.sdk.api.SDKConst;
 import com.skyware.sdk.entity.biz.DevDataGreen;
 
 public class GreenPacketEntity {
@@ -15,9 +15,9 @@ public class GreenPacketEntity {
 	static{
 		CMD_CONTENTS_LIST[CMD_CHECK_INDEX] = 0X04;
 	}
-	public static final byte[] MagicHeader = new byte[]{
-		0x00, 0x00, 0x00, 0x00, 0x00
-	};
+//	public static final byte[] MagicHeader = new byte[]{
+//		0x00, 0x00, 0x00, 0x00, 0x00
+//	};
 	
 	public static int getMyProtocolType() {
 		return SDKConst.PROTOCOL_GREEN;
@@ -39,7 +39,7 @@ public class GreenPacketEntity {
 		public byte[] byteEncoder() {
 
 			return new byte[]{
-				0x01,0x04, 0x00,0x00, 0x00,0x0C 
+				0x01,0x04, 0x00,0x00, 0x00,0x1C, (byte) 0xF1, (byte) 0xC3 
 			};
 		}
 
@@ -64,8 +64,10 @@ public class GreenPacketEntity {
 			if (cmdType != CMD_CONTENTS_LIST[CMD_CHECK_INDEX]) {
 				return false;
 			}
+			//protocol v0.2 CRC校验
 			byte[] dataBytes = new byte[dataLen];
 			System.arraycopy(byteFillArray, 3, dataBytes, 0, dataLen);
+			
 			DevDataGreen devData = new DevDataGreen();
 			if(!devData.mcuDecoder(dataBytes)){
 				return false;

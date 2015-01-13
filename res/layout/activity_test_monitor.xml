@@ -1,60 +1,171 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent" >
+    android:layout_width="fill_parent"
+    android:layout_height="wrap_content" >
 
-    <TextView
-        android:id="@+id/tv_monitor_temp"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignLeft="@+id/tv_monitor_pm2_5"
-        android:layout_below="@+id/tv_monitor_pm2_5"
-        android:layout_marginTop="48dp"
-        android:text="温度" />
-
-    <TextView
-        android:id="@+id/tv_monitor_hum"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignBottom="@+id/tv_monitor_temp"
-        android:layout_alignLeft="@+id/tv_monitor_pm10"
-        android:text="湿度" />
-
-    <TextView
-        android:id="@+id/tv_monitor_co2"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignRight="@+id/tv_monitor_temp"
-        android:layout_below="@+id/tv_monitor_temp"
-        android:layout_marginTop="46dp"
-        android:text="CO2" />
-
-    <TextView
-        android:id="@+id/tv_monitor_voc"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignBaseline="@+id/tv_monitor_co2"
-        android:layout_alignBottom="@+id/tv_monitor_co2"
-        android:layout_alignLeft="@+id/tv_monitor_hum"
-        android:text="VOC" />
-
-    <TextView
-        android:id="@+id/tv_monitor_pm2_5"
+    <TableLayout
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignParentLeft="true"
         android:layout_alignParentTop="true"
-        android:layout_marginLeft="22dp"
-        android:layout_marginTop="68dp"
-        android:text="PM2.5" />
+        android:layout_marginLeft="22dp" >
 
-    <TextView
-        android:id="@+id/tv_monitor_pm10"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_above="@+id/tv_monitor_temp"
-        android:layout_marginLeft="108dp"
-        android:layout_toRightOf="@+id/tv_monitor_pm2_5"
-        android:text="PM10" />
-    
+        <TableRow android:layout_marginTop="20dp">
+
+            <Button
+                android:id="@+id/btn_switch_wifi_on"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="连接AP"/>
+            
+            <Button
+                android:id="@+id/btn_switch_wifi_off"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="70dp"
+                android:enabled="false"
+                android:text="断开AP"/>
+        </TableRow>
+
+        <TableRow android:layout_marginTop="20dp" >
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="pm2.5" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="70dp"
+                android:text="pm10" />
+        </TableRow>
+
+        <TableRow android:layout_marginTop="20dp" >
+
+            <TextView
+                android:id="@+id/tv_monitor_pm2_5_m"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="	min" />
+
+            <TextView
+                android:id="@+id/tv_monitor_pm10_m"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="70dp"
+                android:text="	min" />
+        </TableRow>
+
+        <TableRow android:layout_marginTop="20dp" >
+
+            <TextView
+                android:id="@+id/tv_monitor_pm2_5_h"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="	hour" />
+
+            <TextView
+                android:id="@+id/tv_monitor_pm10_h"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="70dp"
+                android:text="	hour" />
+        </TableRow>
+
+        <TableRow android:layout_marginTop="20dp" >
+
+            <TextView
+                android:id="@+id/tv_monitor_pm2_5_d"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="	day" />
+
+            <TextView
+                android:id="@+id/tv_monitor_pm10_d"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="70dp"
+                android:text="	day" />
+        </TableRow>
+
+        <TableRow android:layout_marginTop="20dp" >
+
+            <TextView
+                android:id="@+id/tv_monitor_temp"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="温度" />
+
+            <TextView
+                android:id="@+id/tv_monitor_hum"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="70dp"
+                android:text="湿度" />
+        </TableRow>
+
+        <TableRow android:layout_marginTop="20dp" >
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="CO2" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="70dp"
+                android:text="VOC" />
+        </TableRow>
+        
+        <TableRow android:layout_marginTop="20dp" >
+
+            <TextView
+                android:id="@+id/tv_monitor_co2_m"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="	min" />
+
+            <TextView
+                android:id="@+id/tv_monitor_voc_m"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="70dp"
+                android:text="	min" />
+        </TableRow>
+
+        <TableRow android:layout_marginTop="20dp" >
+
+            <TextView
+                android:id="@+id/tv_monitor_co2_h"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="	hour" />
+
+            <TextView
+                android:id="@+id/tv_monitor_voc_h"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="70dp"
+                android:text="	hour" />
+        </TableRow>
+
+        <TableRow android:layout_marginTop="20dp" >
+
+            <TextView
+                android:id="@+id/tv_monitor_co2_d"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="	day" />
+
+            <TextView
+                android:id="@+id/tv_monitor_voc_d"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="70dp"
+                android:text="	day" />
+        </TableRow>
+    </TableLayout>
+
 </RelativeLayout>

@@ -1,6 +1,6 @@
 package com.skyware.sdk.entity.biz;
 
-import com.skyware.sdk.consts.SDKConst.Product;
+import com.skyware.sdk.api.SDKConst.Product;
 import com.skyware.sdk.entity.CmdInfo;
 import com.skyware.sdk.entity.DevData;
 import com.skyware.sdk.entity.biz.DevDataHezhong.MODE;

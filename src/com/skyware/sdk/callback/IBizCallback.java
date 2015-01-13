@@ -1,7 +1,7 @@
 package com.skyware.sdk.callback;
 
 import com.skyware.sdk.consts.ErrorConst;
-import com.skyware.sdk.entity.DeviceInfo.DevType;
+import com.skyware.sdk.entity.DeviceInfo;
 import com.skyware.sdk.packet.InPacket;
 import com.skyware.sdk.packet.OutPacket;
 import com.skyware.sdk.packet.entity.PacketEntity.DevStatus;
@@ -21,45 +21,39 @@ public interface IBizCallback {
 	/**
 	 * 连接设备成功
 	 * 
-	 * @param deviceMac
+	 * @param deviceKey
 	 */
-	void onConnectDeviceSuccess(long deviceMac);
+	void onConnectDeviceSuccess(String deviceKey);
 
 	
 	/**
 	 * 连接设备出错
 	 * 
-	 * @param deviceMac
+	 * @param deviceKey
 	 *            设备mac
 	 * @param errType
 	 *            出错类型
 	 * @param errMsg
 	 *            出错消息
 	 */
-	void onConnectDeviceError(long deviceMac, ErrorConst errType, String errMsg);
+	void onConnectDeviceError(String deviceKey, ErrorConst errType, String errMsg);
 
 	/**
 	 * 设备连接断开
 	 * 
-	 * @param deviceMac
+	 * @param deviceKey
 	 * @param errType
 	 * @param errMsg
 	 */
-	void onDeviceDisconnected(long deviceMac, ErrorConst errType, String errMsg);
+	void onDeviceDisconnected(String deviceKey, ErrorConst errType, String errMsg);
 
 	/**
 	 * 发现新设备的回调
 	 * 
-	 * @param deviceMac
-	 *            设备MAC
-	 * @param deviceIp
-	 *            设备IP
-	 * @param deviceType
-	 *            设备类型
-	 * @param protocol
-	 *            协议版本
+	 * @param deviceInfo
+	 *            设备信息
 	 */
-	void onDiscoverNewDevice(long deviceMac, String deviceIp, int protocol, DevType deviceType);
+	void onDiscoverNewDevice(DeviceInfo deviceInfo);
 
 	/**
 	 * 接收到设备的状态上报
@@ -99,21 +93,21 @@ public interface IBizCallback {
 	/**
 	 *	发送包完成
 	 *
-	 *	@param devMac	设备Mac
+	 *	@param devKey	设备Key
 	 *	@param sn		包Sn
 	 */
-	void onSendCmdSuccess(long devMac, int sn);
+	void onSendCmdSuccess(String devKey, int sn);
 
 
 	/**
 	 *	发送包错误
 	 *
-	 *	@param devMac	设备Mac
+	 *	@param devKey	设备Key
 	 *	@param sn		包Sn
 	 *	@param errType	错误类型
 	 *	@param errMsg	错误信息
 	 */
-	void onSendCmdError(long devMac, int sn, ErrorConst errType,
+	void onSendCmdError(String devKey, int sn, ErrorConst errType,
 			String errMsg);
 
 	/**

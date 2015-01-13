@@ -1,13 +1,13 @@
 <RelativeLayout xmlns:tools="http://schemas.android.com/tools"
     xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
     tools:context="com.skyware.sdk.test.ui.TestActivity" >
 
 	<ScrollView
 	    android:id="@+id/sv_result"              
 		android:layout_width="fill_parent"    
-        android:layout_height="120dp"
+        android:layout_height="50dp"
 	    android:fadeScrollbars="false"
 	    android:scrollbarAlwaysDrawVerticalTrack="true"
 	    android:scrollbars="vertical" >
@@ -130,7 +130,7 @@
             android:layout_alignBaseline="@+id/tv_dev_pm_level_key"
             android:text="   " />
         
-        <Button
+<!--         <Button
             android:id="@+id/btn_start"
             android:layout_width="80dp"
             android:layout_height="40dp"
@@ -146,22 +146,128 @@
             android:layout_marginLeft="10dp"
             android:layout_toRightOf="@+id/btn_start"
             android:text="断开"
-            android:textSize="16sp" />
+            android:textSize="16sp" /> -->
 
+		<TextView
+            android:id="@+id/tv_dev_net_status"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@+id/tv_dev_pm_key"
+            android:text="设备网络状态：" />
+		
         <RelativeLayout
             android:id="@+id/layout_dev_switch"
             android:layout_width="fill_parent"
             android:layout_height="wrap_content"
-            android:layout_below="@+id/btn_start"
+            android:layout_below="@+id/tv_dev_net_status"
             android:layout_marginTop="3dp">
 
-            <Switch
-                android:id="@+id/switch_power"
+            <TextView
+                android:id="@+id/tv_power"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="电源" />
+            
+            <RadioGroup 
+                android:id="@+id/rg_power"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_toRightOf="@+id/tv_power"
+                android:orientation="horizontal">"
+                <RadioButton 
+                    android:id="@+id/rb_power_on"
+                	android:layout_width="wrap_content"
+                	android:layout_height="wrap_content"
+                	android:text="on"/>
+                <RadioButton 
+                    android:id="@+id/rb_power_off"
+                	android:layout_width="wrap_content"
+                	android:layout_height="wrap_content"
+                	android:text="off"/>
+            </RadioGroup>
 
-            <Switch
+            <TextView
+                android:id="@+id/tv_childlock"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_toRightOf="@+id/rg_power"
+                android:text="童锁" />
+            
+            <RadioGroup 
+                android:id="@+id/rg_childlock"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_toRightOf="@+id/tv_childlock"
+                android:layout_alignTop="@+id/tv_childlock"
+                android:orientation="horizontal">
+                
+                <RadioButton 
+                    android:id="@+id/rb_childlock_on"
+                	android:layout_width="wrap_content"
+                	android:layout_height="wrap_content"
+                	android:text="on"/>
+                <RadioButton 
+                    android:id="@+id/rb_childlock_off"
+                	android:layout_width="wrap_content"
+                	android:layout_height="wrap_content"
+                	android:text="off"/>
+            </RadioGroup>
+            
+            <TextView
+                android:id="@+id/tv_uv"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_below="@+id/tv_power"
+                android:layout_marginTop="30dp"
+                android:text="UV" />
+            
+            <RadioGroup 
+                android:id="@+id/rg_uv"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_toRightOf="@+id/tv_uv"
+                android:layout_alignTop="@+id/tv_uv"
+                android:orientation="horizontal">
+                <RadioButton 
+                    android:id="@+id/rb_uv_on"
+                	android:layout_width="wrap_content"
+                	android:layout_height="wrap_content"
+                	android:text="on"/>
+                <RadioButton 
+                    android:id="@+id/rb_uv_off"
+                	android:layout_width="wrap_content"
+                	android:layout_height="wrap_content"
+                	android:text="off"/>
+            </RadioGroup>
+            
+            <TextView
+                android:id="@+id/tv_anion"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_toRightOf="@+id/rg_uv"
+                android:layout_alignTop="@+id/rg_uv"
+                android:text="负离子" />
+            
+            <RadioGroup 
+                android:id="@+id/rg_anion"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_toRightOf="@+id/tv_anion"
+                android:layout_alignTop="@+id/tv_anion"
+                android:orientation="horizontal">
+                <RadioButton 
+                    android:id="@+id/rb_anion_on"
+                	android:layout_width="wrap_content"
+                	android:layout_height="wrap_content"
+                	android:text="on"/>
+                <RadioButton 
+                    android:id="@+id/rb_anion_off"
+                	android:layout_width="wrap_content"
+                	android:layout_height="wrap_content"
+                	android:text="off"/>
+            </RadioGroup>
+            
+            <!-- <Switch
                 android:id="@+id/switch_child_lock"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -183,7 +289,7 @@
                 android:layout_height="wrap_content"
                 android:layout_alignBaseline="@+id/switch_uv"
                 android:layout_alignParentRight="true"
-                android:text="负离子" />
+                android:text="负离子" /> -->
 
         </RelativeLayout>
 
@@ -237,10 +343,16 @@
                 android:text="定时" />
 
             <RadioButton
-                android:id="@+id/radio_timer1"
+                android:id="@+id/radio_timer0"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:checked="true"
+                android:text="0" />
+            
+            <RadioButton
+                android:id="@+id/radio_timer1"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
                 android:text="1" />
 
             <RadioButton

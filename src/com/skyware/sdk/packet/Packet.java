@@ -1,6 +1,6 @@
 package com.skyware.sdk.packet;
 
-import com.skyware.sdk.consts.SDKConst;
+import com.skyware.sdk.api.SDKConst;
 
 public class Packet {
 	/** 包的内容 */

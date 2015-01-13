@@ -16,6 +16,7 @@ public abstract class PacketEntity {
 		DEVCHECK,		//状态查询
 		HEARTBEAT,		//心跳
 		DEVSTATUS,		//设备状态
+		NETSTATUS,		//设备网络状态
 		
 		DEVFIND_ACK,	//广播回复
 		DEVCOMMAND_ACK,	//指令回复
@@ -47,26 +48,21 @@ public abstract class PacketEntity {
 		}
 		
 		public abstract static class Ack implements PacketRecv{
-			private long mac;
+			private String key;
 //			protected String ip;
 			
 			public Ack() {
-				this.mac = -1;
 			}
-//			public Ack(long mac) {
-//				this.mac = mac;
+//			public Ack(String key) {
+//				this.key = key;
 //				this.ip = ip;
 //			}
 			
-			public boolean setMac(long mac){
-				if (mac < 0 || mac > 0xFFFFFFFFFFFFL) {
-					return false;
-				}
-				this.mac = mac;
-				return true;
+			public void setKey(String key){
+				this.key = key;
 			}
-			public long getMac(){
-				return mac;
+			public String getKey(){
+				return key;
 			}
 //			public void setIp(String ip){
 //				this.ip = ip;
@@ -242,17 +238,16 @@ public abstract class PacketEntity {
 	
 	public abstract static class DevStatus implements PacketRecv, IJsonEncoder{
 		private int sn;
-		private long mac;
+		private String key;
 		private DevData devData;	//设备参数实体类
 		
 		public DevStatus() {
 			this.sn = -1;
-			this.mac = -1;
 			this.devData = null;
 		}
-//		public DevStatus(int sn, long mac, DevData devData) {
+//		public DevStatus(int sn, String key, DevData devData) {
 //			this.sn = sn;
-//			this.mac = mac;
+//			this.key = key;
 //			this.devData = devData;
 //		}
 		public int getSn() {
@@ -261,11 +256,11 @@ public abstract class PacketEntity {
 		public void setSn(int sn) {
 			this.sn = sn;
 		}
-		public long getMac() {
-			return mac;
+		public String getKey() {
+			return key;
 		}
-		public void setMac(long mac) {
-			this.mac = mac;
+		public void setKey(String key) {
+			this.key = key;
 		}	
 		public DevData getDevData() {
 			return devData;

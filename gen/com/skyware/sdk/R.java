@@ -13,8 +13,95 @@ public final class R {
     public static final class drawable {
         public static int ic_launcher=0x7f020000;
     }
+    public static final class id {
+        public static int btn_power_off_plugin=0x7f060040;
+        public static int btn_power_on_plugin=0x7f06003f;
+        public static int btn_switch_wifi_off=0x7f060042;
+        public static int btn_switch_wifi_on=0x7f060041;
+        public static int layout_dev_airpurifier=0x7f060002;
+        public static int layout_dev_plugin=0x7f06003d;
+        public static int layout_dev_switch=0x7f060011;
+        public static int radioGroup_fanspeed=0x7f060036;
+        public static int radioGroup_mode=0x7f060022;
+        public static int radioGroup_timer=0x7f060027;
+        public static int radio_fanspeed1=0x7f060038;
+        public static int radio_fanspeed2=0x7f060039;
+        public static int radio_fanspeed3=0x7f06003a;
+        public static int radio_fanspeed4=0x7f06003b;
+        public static int radio_fanspeed5=0x7f06003c;
+        public static int radio_mode_auto=0x7f060025;
+        public static int radio_mode_manual=0x7f060024;
+        public static int radio_mode_sleep=0x7f060026;
+        public static int radio_timer0=0x7f060029;
+        public static int radio_timer1=0x7f06002a;
+        public static int radio_timer10=0x7f060033;
+        public static int radio_timer11=0x7f060034;
+        public static int radio_timer12=0x7f060035;
+        public static int radio_timer2=0x7f06002b;
+        public static int radio_timer3=0x7f06002c;
+        public static int radio_timer4=0x7f06002d;
+        public static int radio_timer5=0x7f06002e;
+        public static int radio_timer6=0x7f06002f;
+        public static int radio_timer7=0x7f060030;
+        public static int radio_timer8=0x7f060031;
+        public static int radio_timer9=0x7f060032;
+        public static int rb_anion_off=0x7f060021;
+        public static int rb_anion_on=0x7f060020;
+        public static int rb_childlock_off=0x7f060019;
+        public static int rb_childlock_on=0x7f060018;
+        public static int rb_power_off=0x7f060015;
+        public static int rb_power_on=0x7f060014;
+        public static int rb_uv_off=0x7f06001d;
+        public static int rb_uv_on=0x7f06001c;
+        public static int rg_anion=0x7f06001f;
+        public static int rg_childlock=0x7f060017;
+        public static int rg_power=0x7f060013;
+        public static int rg_uv=0x7f06001b;
+        public static int sv_result=0x7f060000;
+        public static int tv_anion=0x7f06001e;
+        public static int tv_childlock=0x7f060016;
+        public static int tv_dev_filter_key=0x7f060004;
+        public static int tv_dev_filter_level_key=0x7f060006;
+        public static int tv_dev_filter_level_value=0x7f060007;
+        public static int tv_dev_filter_value=0x7f060005;
+        public static int tv_dev_hum_key=0x7f06000a;
+        public static int tv_dev_hum_value=0x7f06000b;
+        public static int tv_dev_info=0x7f060003;
+        public static int tv_dev_info_plugin=0x7f06003e;
+        public static int tv_dev_net_status=0x7f060010;
+        public static int tv_dev_pm_key=0x7f06000c;
+        public static int tv_dev_pm_level_key=0x7f06000e;
+        public static int tv_dev_pm_level_value=0x7f06000f;
+        public static int tv_dev_pm_value=0x7f06000d;
+        public static int tv_dev_temp_key=0x7f060008;
+        public static int tv_dev_temp_value=0x7f060009;
+        public static int tv_fanspeed=0x7f060037;
+        public static int tv_mode=0x7f060023;
+        public static int tv_monitor_co2_d=0x7f06004f;
+        public static int tv_monitor_co2_h=0x7f06004d;
+        public static int tv_monitor_co2_m=0x7f06004b;
+        public static int tv_monitor_hum=0x7f06004a;
+        public static int tv_monitor_pm10_d=0x7f060048;
+        public static int tv_monitor_pm10_h=0x7f060046;
+        public static int tv_monitor_pm10_m=0x7f060044;
+        public static int tv_monitor_pm2_5_d=0x7f060047;
+        public static int tv_monitor_pm2_5_h=0x7f060045;
+        public static int tv_monitor_pm2_5_m=0x7f060043;
+        public static int tv_monitor_temp=0x7f060049;
+        public static int tv_monitor_voc_d=0x7f060050;
+        public static int tv_monitor_voc_h=0x7f06004e;
+        public static int tv_monitor_voc_m=0x7f06004c;
+        public static int tv_power=0x7f060012;
+        public static int tv_result=0x7f060001;
+        public static int tv_timer=0x7f060028;
+        public static int tv_uv=0x7f06001a;
+    }
+    public static final class layout {
+        public static int activity_test_airpal=0x7f030000;
+        public static int activity_test_monitor=0x7f030001;
+    }
     public static final class string {
-        public static int app_name=0x7f030000;
+        public static int app_name=0x7f040000;
     }
     public static final class style {
         /** 
@@ -26,22 +113,11 @@ public final class R {
             res/values-vXX/styles.xml, while customizations related to
             backward-compatibility can go here.
         
-
-        Base application theme for API 11+. This theme completely replaces
-        AppBaseTheme from res/values/styles.xml on API 11+ devices.
-    
- API 11 theme customizations can go here. 
-
-        Base application theme for API 14+. This theme completely replaces
-        AppBaseTheme from BOTH res/values/styles.xml and
-        res/values-v11/styles.xml on API 14+ devices.
-    
- API 14 theme customizations can go here. 
          */
-        public static int AppBaseTheme=0x7f040000;
+        public static int AppBaseTheme=0x7f050000;
         /**  Application theme. 
  All customizations that are NOT specific to a particular API-level can go here. 
          */
-        public static int AppTheme=0x7f040001;
+        public static int AppTheme=0x7f050001;
     }
 }

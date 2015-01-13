@@ -2,13 +2,11 @@ package com.skyware.sdk.packet.entity;
 
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
-import java.nio.charset.Charset;
 
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import com.skyware.sdk.consts.SDKConst;
-import com.skyware.sdk.consts.SocketConst;
+import com.skyware.sdk.api.SDKConst;
 import com.skyware.sdk.entity.DevData;
 import com.skyware.sdk.manage.BizManager;
 import com.skyware.sdk.packet.InPacket;
@@ -102,7 +100,7 @@ public class PacketHelper {
 	 * @param targetAddr 发送目标地址
 	 * @return OutPacket 心跳包
 	 */
-	public static OutPacket getDevCheckPacket(int sn, long mac, int protocol) {
+	public static OutPacket getDevCheckPacket(int sn, String key, int protocol) {
 		OutPacket packet = new OutPacket();
 		
 		packet.setType(PacketType.DEVCHECK);
@@ -129,10 +127,10 @@ public class PacketHelper {
 	 * 
 	 * @param sn	请求-应答标识
 	 * @param data 命令实体
-	 * @param mac	目标设备mac
+	 * @param key	目标设备key
 	 * @return OutPacket 心跳包	null--转码失败
 	 */
-	public static OutPacket getDevCmdPacket(int sn, DevData data, long mac, int protocol) {
+	public static OutPacket getDevCmdPacket(int sn, DevData data, String key, int protocol) {
 		OutPacket packet = new OutPacket();
 
 		packet.setType(PacketType.DEVCOMMAND);
@@ -146,7 +144,7 @@ public class PacketHelper {
 			packet.setContent(devCmd.byteEncoder());
 			break;
 		case SDKConst.PROTOCOL_BROADLINK:
-			devCmd = new BroadlinkPacketEntity.DevCmd(sn, data, mac);
+			devCmd = new BroadlinkPacketEntity.DevCmd(sn, data, key);
 			packet.setContent(devCmd.byteEncoder());
 			break;
 		}
@@ -170,12 +168,11 @@ public class PacketHelper {
 		switch (protocol) {
 		case SDKConst.PROTOCOL_MOORE:
 			try {
-				JSONObject mJson = new JSONObject(new String(packet.getContent(), 
-								Charset.forName(SocketConst.CHARSET_TCP_CONTENT)));
+				JSONObject mJson = new JSONObject(new String(packet.getContent()));
 			
-				return mJson.getInt("sn");
+				return mJson.getInt(MoorePacketEntity.snName);
 			} catch (JSONException e) {
-//				e.printStackTrace();  广播包
+//				e.printStackTrace();  //TODO 广播包
 			}
 			return -1;
 		case SDKConst.PROTOCOL_BROADLINK:
@@ -209,31 +206,44 @@ public class PacketHelper {
 		switch (protocol) {
 		case SDKConst.PROTOCOL_MOORE:
 			try {
-				JSONObject mJson = new JSONObject(new String(packet.getContent(), Charset.forName(SocketConst.CHARSET_TCP_CONTENT)));
+				JSONObject mJson = new JSONObject(new String(packet.getContent()));
 				
 //				Log.e("PacketHelper", "InPakcet: " + mJson.toString(3));
 				
-				String cmdValue = mJson.getString("cmd");
-//				Log.e("PacketHelper", "cmd: " + cmdValue);
+				String cmdValue = mJson.optString(MoorePacketEntity.cmdName);
+				
+				// 如果不包含 cmd 项，则可能为设备网络状态上报
+				// 形如：{"deviceOnline":"0","deviceId":"832250229"}
+				if (cmdValue == null || cmdValue.equals("")) {
+					if (mJson.opt(MoorePacketEntity.netStatusName) != null) {
+						return PacketType.NETSTATUS;
+					}
+				}
+				
 				if (packet instanceof InPacket) {
 					if (cmdValue.equals(MoorePacketEntity.HeartBeat.cmdValue)) {
+						//心跳ACK
 						return PacketType.HEARTBEAT_ACK; 
 					} else if(cmdValue.equals(MoorePacketEntity.DevCmd.cmdValue)) {
+						//指令ACK
 						return PacketType.DEVCOMMAND_ACK; 
 					} else if(cmdValue.equals(MoorePacketEntity.DevStatus.cmdValue)) {
+						//状态上报
 						return PacketType.DEVSTATUS; 
 					} 
 				} else if (packet instanceof OutPacket) {
 					if (cmdValue.equals(MoorePacketEntity.HeartBeat.cmdValue)) {
+						//心跳
 						return PacketType.HEARTBEAT; 
 					} else if(cmdValue.equals(MoorePacketEntity.DevCmd.cmdValue)) {
+						//指令
 						return PacketType.DEVCOMMAND; 
 					} 
 				}
 				//TODO 尚未兼容广播包
 				
 			} catch (JSONException e) {
-//				e.printStackTrace();	TODO:如果不是json，就是广播包
+//				e.printStackTrace();	如果不是json，就是广播包
 				return PacketType.DEVFIND_ACK;
 			}
 			break;
@@ -246,7 +256,7 @@ public class PacketHelper {
 			}
 			break;
 		case SDKConst.PROTOCOL_GREEN:
-			//TODO 金立格林
+			//TODO 中立格林
 			return PacketType.DEVSTATUS;
 			
 		default:
