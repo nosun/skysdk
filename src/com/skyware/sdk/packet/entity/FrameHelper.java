@@ -24,7 +24,7 @@ public class FrameHelper {
 	public static int frameMsg(byte[] sendMsg, int msgSize, int protocol) throws IllegalArgumentException, IOException {
 		
 		switch (protocol) {
-		case SDKConst.PROTOCOL_MOORE:
+		case SDKConst.PROTOCOL_LIERDA:
 			for (int i=0; i< msgSize ;i++) {
 				if (sendMsg[i] == DELIMITER_MOORE) {
 					if (i == msgSize-1) {	//最后一个
@@ -81,7 +81,7 @@ public class FrameHelper {
 		int recvMsgSize = 0;
 		
 		switch (protocol) {
-		case SDKConst.PROTOCOL_MOORE:
+		case SDKConst.PROTOCOL_LIERDA:
 			do {
 				nextByte = in.read();
 //				Log.e("ReframeMsg", "TCP read Byte: " + (char)(nextByte) + ", ascii: "+ nextByte);

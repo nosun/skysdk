@@ -5,13 +5,8 @@ import java.util.Random;
 import android.app.Activity;
 import android.os.Bundle;
 import android.util.Log;
-import android.view.View;
-import android.view.View.OnClickListener;
 import android.widget.Button;
-import android.widget.CompoundButton;
-import android.widget.CompoundButton.OnCheckedChangeListener;
 import android.widget.TextView;
-import android.widget.ToggleButton;
 
 import com.skyware.sdk.R;
 import com.skyware.sdk.api.SDKConfig;
@@ -140,8 +135,8 @@ public class TestApActivity extends Activity {
 		@Override
 		public void onRecvDevStatus(DevStatus status) {
 //			Log.e("CallbackAP","onRecvDevStatus: " + status);
-			if (status != null && status.getDevData() != null && status.getDevData() instanceof DevDataGreen) {
-				DevDataGreen data = (DevDataGreen)status.getDevData();
+			if (status != null && status.devData != null && status.devData instanceof DevDataGreen) {
+				DevDataGreen data = (DevDataGreen)status.devData;
 				pm25mTextView.setText("minute "+ data.getPm2_5AvgMin() + "μg/m3");
 				pm10mTextView.setText("minute "+ data.getPm10AvgMin() + "μg/m3");
 				pm25hTextView.setText("hour "+ data.getPm2_5AvgHour() + "μg/m3");

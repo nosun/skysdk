@@ -1,11 +1,11 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.skyware.sdk"
-    android:versionCode="1"
-    android:versionName="1.0" >
+    android:versionCode="15"
+    android:versionName="0.6.7" >
     
 	<uses-sdk 
 	    android:minSdkVersion="3"
-	    android:targetSdkVersion="7"/>
+	    android:targetSdkVersion="15"/>
 	
     <uses-permission android:name="android.permission.VIBRATE" />	
     
@@ -17,6 +17,22 @@
 	<uses-permission android:name="android.permission.INTERNET"/>
 	<uses-permission android:name="android.permission.CHANGE_WIFI_MULTICAST_STATE" />
 	
+	<!-- Testin崩溃大师 -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+    <uses-permission android:name="android.permission.READ_PHONE_STATE" />
+    <uses-permission android:name="android.permission.READ_LOGS" />
+    <uses-permission android:name="android.permission.GET_TASKS" />
+    
+	<!-- Bugly 必须的权限：-->
+    <uses-permission android:name="android.permission.READ_PHONE_STATE" />  	<!-- 获取设备信息 -->
+    <uses-permission android:name="android.permission.INTERNET" /> 			<!-- 网络通信-->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" /> 	<!-- 获取网络状态 -->
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" /> 	<!-- 获取MAC地址-->
+	 <!-- 可选的权限： -->
+    <uses-permission android:name="android.permission.READ_LOGS" /> 			<!-- 获取logcat日志 -->
+    
     <application
         android:allowBackup="true"
         android:icon="@drawable/ic_launcher"
@@ -24,7 +40,7 @@
         android:theme="@style/AppTheme" >
         
         <activity
-            android:name=".test.ui.TestActivity"
+            android:name=".test.ui.TestRoyalstarActivity"
             android:label="@string/app_name" 
             android:launchMode="singleTask">
             <intent-filter>
@@ -32,7 +48,20 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <service android:name=".push.MqttService" />
+        <service 
+            android:name=".push.MqttService" />
+        
+        <!-- Testin崩溃大师 AppKey -->
+        <meta-data android:name="TESTIN_APPKEY" android:value="62ac0987745762ffbec29b2a32b7d65c"/>
+        <!-- Testin崩溃大师 渠道信息 -->
+        <!-- <meta-data android:name="TESTIN_CHANNEL" android:value="Channel_ID"/> -->
+        
+        <!-- 腾讯Bugly AppId-->
+		<meta-data android:name="BUGLY_APPID" android:value="900002296"/>
+        
+		<!-- Skyware云平台 AppId -->
+		<meta-data android:name="SKYWARE_APPID" android:value="0"/>
+		
     </application>
 
 </manifest>

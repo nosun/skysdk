@@ -1,5 +1,7 @@
 package com.skyware.sdk.entity;
 
+import org.json.JSONObject;
+
 import com.skyware.sdk.api.SDKConst;
 
 public class DeviceInfo {
@@ -25,6 +27,7 @@ public class DeviceInfo {
 	private String sn;
 	
 	private int protocol = SDKConst.PROTOCOL_UNKNOWN;
+	private int productType = SDKConst.PRODUCT_UNKNOWN;
 	private DevType devType;
 	
 	private String ip;
@@ -34,7 +37,6 @@ public class DeviceInfo {
 	private DevData data;
 	
 	private DevParas paras;
-	
 	
 	
 	public String getId() {
@@ -163,5 +165,39 @@ public class DeviceInfo {
 	public void setLocalNetStat(LocalNetStat localNetStat) {
 		this.localNetStat = localNetStat;
 	}
+	public int getProductType() {
+		return productType;
+	}
+	public void setProductType(int productType) {
+		this.productType = productType;
+	}
 
+	
+	
+	public void jsonEncoder(JSONObject json) {
+		if (json != null) {
+			String device_mac = json.optString("device_mac");
+			String device_id = json.optString("device_id");
+			String device_sn = json.optString("device_sn");
+			String device_online = json.optString("device_online");
+			
+			if(!device_mac.equals("") && !device_mac.equals("null")){
+				setMac(device_mac);
+			}
+			if(!device_id.equals("") && !device_id.equals("null")){
+				setId(device_id);
+			}
+			if(!device_sn.equals("") && !device_sn.equals("null")){
+				setSn(device_sn);
+			}
+			if(!device_online.equals("") && !device_online.equals("null")){
+				if (device_online.equals("1")) {
+					setRemoteNetStat(RemoteNetStat.ONLINE);
+				} else if (device_online.equals("0")) {
+					setRemoteNetStat(RemoteNetStat.OFFLINE);
+				}
+			}
+		}
+	}
+	
 }

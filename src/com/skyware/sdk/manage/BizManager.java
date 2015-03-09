@@ -3,22 +3,25 @@ package com.skyware.sdk.manage;
 import java.lang.ref.WeakReference;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
-
-import org.json.JSONException;
 
 import android.content.Context;
 import android.content.SharedPreferences.Editor;
+import android.content.pm.PackageManager;
+import android.content.pm.PackageManager.NameNotFoundException;
 import android.net.wifi.WifiConfiguration;
 import android.net.wifi.WifiInfo;
 import android.os.Handler;
 import android.provider.Settings.Secure;
 import android.util.Log;
 
+import com.ibm.mqtt.MqttException;
 import com.skyware.sdk.api.SDKConst;
 import com.skyware.sdk.api.SkySDK;
 import com.skyware.sdk.callback.IBizCallback;
 import com.skyware.sdk.consts.ErrorConst;
+import com.skyware.sdk.consts.SocketConst;
 import com.skyware.sdk.entity.CmdInfo;
 import com.skyware.sdk.entity.DeviceInfo;
 import com.skyware.sdk.entity.ErrorInfo;
@@ -29,6 +32,8 @@ import com.skyware.sdk.packet.entity.PacketEntity.PacketType;
 import com.skyware.sdk.push.MqttService;
 import com.skyware.sdk.thread.ThreadPoolManager;
 import com.skyware.sdk.util.NetworkHelper;
+import com.tencent.bugly.crashreport.CrashReport;
+import com.testin.agent.TestinAgent;
 
 public class BizManager {
 
@@ -72,6 +77,10 @@ public class BizManager {
 	/** 自动切网前的wifi信息保存 */
 	private PrevNetworkInfo mPrevNetworkInfo;
 	
+	public int getRandomSn() {
+		return new Random().nextInt(SocketConst.SN_MAX);
+	}
+	
 	/**
 	 *	初始化
 	 *
@@ -86,9 +95,13 @@ public class BizManager {
 		
 		mNetworkManager = new NetworkManager(mBizCallback);
 		mPrevNetworkInfo = new PrevNetworkInfo();
-		if (SkySDK.getConfig() != null && !SkySDK.getConfig().isApMode()) {
+		if (SkySDK.getConfig() != null && SkySDK.getConfig().isEnablePush()) {
 			initMqtt(context);
 		}
+		if (SkySDK.getConfig() != null && SkySDK.getConfig().hasCrashCollect()) {
+			initCrashCollection(context);
+		}
+		
 	}
 
 	private void initMqtt(Context context){
@@ -98,8 +111,37 @@ public class BizManager {
     	editor.putString(MqttService.PREF_DEVICE_ID, deviceID);
     	editor.commit();
     	//开启Mqtt Service
-		MqttService.actionStart(mContext.get());
+		MqttService.actionStart(context);
 	}
+	
+	private void initCrashCollection(Context context) {
+		String userId = SkySDK.getConfig() != null?SkySDK.getConfig().getUserId(): null;
+		
+		// 腾讯Bugly
+		try {
+			int appId = context.getPackageManager()
+					.getApplicationInfo(context.getPackageName(),PackageManager.GET_META_DATA)
+					.metaData.getInt("BUGLY_APPID", -1);
+			boolean isDebug = true ;  	//true代表App处于调试阶段，false代表App发布阶段
+			if (appId != -1) {
+				CrashReport.initCrashReport(context , appId+"" ,isDebug);  //初始化SDK   
+			}
+			
+			if (userId != null) {
+				CrashReport.setUserId(userId);
+			}
+		} catch (NameNotFoundException e) {
+			e.printStackTrace();
+		}
+		
+		// Testin崩溃大师
+ 		TestinAgent.init(context);
+ 		if (userId != null) {
+ 			TestinAgent.setUserInfo(userId);
+		}
+	}
+	
+	
 	/**
 	 *	释放所有对象
 	 *
@@ -108,7 +150,7 @@ public class BizManager {
 	public void finallize() {
 		//清空线程池
 		ThreadPoolManager.getInstance().finallize();
-		if (SkySDK.getConfig() != null && !SkySDK.getConfig().isApMode()) {
+		if (SkySDK.getConfig() != null && SkySDK.getConfig().isEnablePush()) {
 			//关闭Mqtt Service
 			MqttService.actionStop(mContext.get());
 		}
@@ -132,6 +174,22 @@ public class BizManager {
 		}
 		
 		ThreadPoolManager.getInstance().shutdownAll();
+	}
+	
+	public void mqttSubcribe(String topicName) {
+		try {
+			MqttService.subcribe(topicName);
+		} catch (MqttException e) {
+			e.printStackTrace();
+		}
+	}
+	
+	public void mqttPublish(String topicName, String message) {
+		try {
+			MqttService.publish(topicName, message);
+		} catch (MqttException e) {
+			e.printStackTrace();
+		}
 	}
 	
 	/**
@@ -168,12 +226,9 @@ public class BizManager {
 				//TODO 连接失败上报
 			}
 		}
-//			//发送查询指令
-//			OutPacket packet = PacketHelper.getDevCheckPacket(mNetworkManager.getSn());
-////			Log.e(this.getClass().getSimpleName(), "packet: " + new String(packet.getContent(), Charset.forName("US-ASCII")));
-//			if (packet != null) {
-//				mNetworkManager.sendPacketToDevice(key, packet, true);
-//			}
+		
+		//发送登录指令
+		loginDevice(key, getRandomSn());
 	}
 	
 	/**
@@ -319,16 +374,34 @@ public class BizManager {
 	/**
 	 *	向设备发送命令
 	 */
-	public void sendCmdToDevice(String mac, CmdInfo cmd, int sn) {
-		Log.e(this.getClass().getSimpleName(), "sendCmdToDevice()! mac: " + mac + ",cmd: " + cmd + ",sn: " + sn);
+	public void sendCmdToDevice(String key, CmdInfo cmd, int sn) {
+		Log.e(this.getClass().getSimpleName(), "sendCmdToDevice()! mac: " + key + ",cmd: " + cmd + ",sn: " + sn);
 		
 		if (NetworkHelper.isWifiConnected(getContext())) {
-			if(!mNetworkManager.sendPacketToDevice(mac, PacketType.DEVCOMMAND, cmd, sn, true)){
+			if(!mNetworkManager.sendPacketToDevice(key, PacketType.DEVCOMMAND, cmd, sn, true)){
 				//TODO 发送失败上报（同步异常）
+				
 			}
 		} else {
 			//TODO 否则走大循环
-			mBizCallback.onSendCmdError(mac, sn, ErrorConst.EWIFI_NOTCONNECT, "未连接wifi");
+			mBizCallback.onSendCmdError(key, sn, ErrorConst.EWIFI_NOTCONNECT, "未连接wifi");
+		}
+	}
+	
+	/**
+	 *	向设备发送登录请求
+	 */
+	public void loginDevice(String key, int sn) {
+		Log.e(this.getClass().getSimpleName(), "sendLoginToDevice()! mac: " + key + ",sn: " + sn);
+		
+		if (NetworkHelper.isWifiConnected(getContext())) {
+			if(!mNetworkManager.sendPacketToDevice(key, PacketType.DEVLOGIN, null, sn, true)){
+				//TODO 发送失败上报（同步异常）
+				
+			}
+		} else {
+			//TODO 否则走大循环
+			mBizCallback.onSendCmdError(key, sn, ErrorConst.EWIFI_NOTCONNECT, "未连接wifi");
 		}
 	}
 	
@@ -336,6 +409,22 @@ public class BizManager {
 	 *	查询设备状态
 	 */
 	public void checkDeviceStatus(String key, int sn) {
+		Log.e(this.getClass().getSimpleName(), "checkDeviceStatus()! key: " + key + ",sn: " + sn);
+		
+		if (NetworkHelper.isWifiConnected(getContext())) {
+			if(!mNetworkManager.sendPacketToDevice(key, PacketType.DEVCHECK, null, sn, true)){
+				//TODO 发送失败上报（同步异常）
+			}
+		} else {
+			//TODO 否则走大循环
+			mBizCallback.onSendCmdError(key, sn, ErrorConst.EWIFI_NOTCONNECT, "未连接wifi");
+		}
+	}
+	
+	/**
+	 *	查询Ap状态
+	 */
+	public void checkApStatus(String key, int sn) {
 		Log.e(this.getClass().getSimpleName(), "checkDeviceStatus()! key: " + key + ",sn: " + sn);
 		
 		if (NetworkHelper.isWifiConnected(getContext())) {
@@ -347,6 +436,8 @@ public class BizManager {
 			mBizCallback.onSendCmdError(key, sn, ErrorConst.EWIFI_NOTCONNECT, "未连接wifi");
 		}
 	}
+	
+	
 	
 	/**
 	 *	业务层回调
@@ -434,15 +525,17 @@ public class BizManager {
 			}
 		}
 		@Override
+		@Deprecated
 		public void onRecvDevStatus(DevStatus devStatus) {
 			if (mUIHandler != null && devStatus != null) {
-				try {
 					mUIHandler.obtainMessage(SDKConst.MSG_DEVICE_STATUS, devStatus).sendToTarget();
-					mUIHandler.obtainMessage(SDKConst.MSG_DEVICE_STATUS_JSON, devStatus.jsonEncoder().toString()).sendToTarget();
-				} catch (JSONException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
+			}	
+		}
+		@Override
+		public void onRecvDevStatus(String json) {
+			if (mUIHandler != null && json != null && !json.equals("")) {
+				//devStatus.jsonEncoder().toString()
+				mUIHandler.obtainMessage(SDKConst.MSG_DEVICE_STATUS_JSON, json).sendToTarget();
 			}	
 		}
 		@Override

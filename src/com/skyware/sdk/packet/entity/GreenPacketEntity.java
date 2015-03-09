@@ -68,11 +68,12 @@ public class GreenPacketEntity {
 			byte[] dataBytes = new byte[dataLen];
 			System.arraycopy(byteFillArray, 3, dataBytes, 0, dataLen);
 			
-			DevDataGreen devData = new DevDataGreen();
-			if(!devData.mcuDecoder(dataBytes)){
+			DevDataGreen _data = new DevDataGreen();
+			if(!_data.mcuDecoder(dataBytes)){
 				return false;
 			}
-			setDevData(devData);
+			
+			devData = _data;
 			return true;
 		}
 

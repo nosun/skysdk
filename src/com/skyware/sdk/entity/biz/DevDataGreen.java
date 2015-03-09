@@ -6,10 +6,9 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import com.skyware.sdk.entity.DevData;
-import com.skyware.sdk.entity.IMCUCoder;
 import com.skyware.sdk.util.ConvertUtil;
 
-public class DevDataGreen extends DevData implements IMCUCoder<byte[]>{
+public class DevDataGreen extends DevData{
 
 	/** 温度，2位小数， 测量范围 -20℃~50℃*/
 	private String temperature;
@@ -188,71 +187,74 @@ public class DevDataGreen extends DevData implements IMCUCoder<byte[]>{
 	}
 	
 	@Override
-	public boolean mcuDecoder(byte[] mcuData) {
+	public boolean mcuDecoder(Object obj) {
+		if (obj != null && obj instanceof byte[]) {
+			byte[] mcuData = (byte[])obj;
 		
-		if (mcuData.length %4 != 0) {
-			return false;
-		}
-		int dataCount = mcuData.length/4;
-		for (int i = 0; i < dataCount; i++) {
-			byte[] floatBytes = new byte[4];
-			float value;
-			System.arraycopy(mcuData, i*4, floatBytes, 0, 4);
-			
-			value = Float.intBitsToFloat(ConvertUtil.fourBytes2Integer(floatBytes));
-			
-			DecimalFormat decimalFormat2 = new DecimalFormat("0.00");//构造方法的字符格式这里如果小数不足2位,会以0补足.
-			DecimalFormat decimalFormat3 = new DecimalFormat("0.000");
-			
-			switch (i) {
-			case 0:
-				setVocAvgHour(decimalFormat3.format(value) + "");
-				break;
-			case 1:
-				setCo2AvgHour((int)value + "");
-				break;
-			case 2:
-				setPm10AvgHour(value + "");
-				break;
-			case 3:
-				setPm2_5AvgHour(value + "");
-				break;
-			case 4:
-				setCo2AvgMin((int)value + "");
-				break;
-			case 5:
-				setTemperature(decimalFormat2.format(value) + "");
-				break;
-			case 6:
-				setHumidity(decimalFormat2.format(value) + "");
-				break;
-			case 7:
-				setPm2_5AvgMin(value + "");
-				break;
-			case 8:
-				setPm10AvgMin(value + "");
-				break;
-			case 9:
-				setVocAvgMin(decimalFormat3.format(value) + "");
-				break;
-			case 10:
-				setPm2_5AvgDay(value + "");
-				break;
-			case 11:
-				setPm10AvgDay(value + "");
-				break;
-			case 12:
-				setCo2AvgDay((int)value + "");
-				break;
-			case 13:
-				setVocAvgDay(decimalFormat3.format(value) + "");
-				break;
-			default:
-				break;
+			if (mcuData.length %4 != 0) {
+				return false;
 			}
+			int dataCount = mcuData.length/4;
+			for (int i = 0; i < dataCount; i++) {
+				byte[] floatBytes = new byte[4];
+				float value;
+				System.arraycopy(mcuData, i*4, floatBytes, 0, 4);
+				
+				value = Float.intBitsToFloat(ConvertUtil.fourBytes2Integer(floatBytes));
+				
+				DecimalFormat decimalFormat2 = new DecimalFormat("0.00");//构造方法的字符格式这里如果小数不足2位,会以0补足.
+				DecimalFormat decimalFormat3 = new DecimalFormat("0.000");
+				
+				switch (i) {
+				case 0:
+					setVocAvgHour(decimalFormat3.format(value) + "");
+					break;
+				case 1:
+					setCo2AvgHour((int)value + "");
+					break;
+				case 2:
+					setPm10AvgHour(value + "");
+					break;
+				case 3:
+					setPm2_5AvgHour(value + "");
+					break;
+				case 4:
+					setCo2AvgMin((int)value + "");
+					break;
+				case 5:
+					setTemperature(decimalFormat2.format(value) + "");
+					break;
+				case 6:
+					setHumidity(decimalFormat2.format(value) + "");
+					break;
+				case 7:
+					setPm2_5AvgMin(value + "");
+					break;
+				case 8:
+					setPm10AvgMin(value + "");
+					break;
+				case 9:
+					setVocAvgMin(decimalFormat3.format(value) + "");
+					break;
+				case 10:
+					setPm2_5AvgDay(value + "");
+					break;
+				case 11:
+					setPm10AvgDay(value + "");
+					break;
+				case 12:
+					setCo2AvgDay((int)value + "");
+					break;
+				case 13:
+					setVocAvgDay(decimalFormat3.format(value) + "");
+					break;
+				default:
+					break;
+				}
+			}
+			return true;
 		}
-		
-		return true;
+		return false;
 	}
 	
 	

@@ -1,11 +1,13 @@
 package com.skyware.sdk.util;
 
+import java.net.InetAddress;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import android.content.Context;
 import android.net.ConnectivityManager;
+import android.net.DhcpInfo;
 import android.net.NetworkInfo;
 import android.net.wifi.ScanResult;
 import android.net.wifi.WifiConfiguration;
@@ -152,10 +154,24 @@ public class NetworkHelper {
 		if (context == null) {
 			return null;
 		}
-		int gatwayVal = getWifiManager(context).getDhcpInfo().gateway;
-		return (String.format("%d.%d.%d.%d", (gatwayVal & 0xff),
-				(gatwayVal >> 8 & 0xff), (gatwayVal >> 16 & 0xff),
-				(gatwayVal >> 24 | 0xff))).toString();
+//		int gatwayVal = getWifiManager(context).getDhcpInfo().gateway;
+//		return (String.format("%d.%d.%d.%d", (gatwayVal & 0xff),
+//				(gatwayVal >> 8 & 0xff), (gatwayVal >> 16 & 0xff),
+//				(gatwayVal >> 24 | 0xff))).toString();
+        DhcpInfo myDhcpInfo = getWifiManager(context).getDhcpInfo();
+        if(myDhcpInfo == null)
+            return "255.255.255.255";
+        int broadcast = myDhcpInfo.ipAddress & myDhcpInfo.netmask | ~myDhcpInfo.netmask;
+        byte quads[] = new byte[4];
+        for(int k = 0; k < 4; k++)
+            quads[k] = (byte)(broadcast >> k * 8 & 255);
+
+        try {
+            return InetAddress.getByAddress(quads).getHostAddress();
+        }
+        catch(Exception e) {
+            return "255.255.255.255";
+        }
 	}
 
 	// @SuppressWarnings("deprecation")

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+    <resources>
+        <string-array name="royalstar_err">
+            <item>正常状态</item>
+            <item>提壶操作或温度探头开路</item>
+            <item>温度探头短路操作</item>
+            <item>温度探头高温操作</item>
+            <item>煮水壶内无水状态</item>
+            <item>旋转龙头信号异常</item>
+        </string-array>
+        
+        <string-array name="royalstar_stats">
+            <item>加水龙头静止</item>
+            <item>煮水加水进行中</item>
+            <item>煮水龙头归位中</item>
+            <item>消毒加水进行中</item>
+            <item>消毒龙头归位中</item>
+        </string-array>
+    </resources>

@@ -1,22 +1,24 @@
 package com.skyware.sdk.api;
 
-import com.skyware.sdk.entity.DeviceInfo.DevType;
 
 
 public class SDKConst {
 	
-	public static enum Product{
-		AirPal,
-		IAQMonitor,
-		SP2
-	}
+//	public static enum ProductType{
+//		AirPal_PL300,
+//		AirPal_PL500,
+//		IAQMonitor,
+//		SP2,
+//		Cair
+//	}
+	
 	/** ---IMPORTANT--- BEBUG标记，上线时不要忘记设为false*/
 	public static final Boolean FLAG_DEBUG = true;
 	
 	public static final String SP_NAME_MQTT = "skysdk_mqtt";
 	
 	/** 状态推送超时时间 */
-	public static final int TIMEOUT_PUSH_STATUS = 1000 * 60;	//1min
+	public static final int TIMEOUT_PUSH_STATUS = 1000 * 10;	//10s
 	
 	/** WIFI 模块AP模式，点对点通信*/
 //	public static final Boolean FLAG_AP_MODE = true;
@@ -24,18 +26,34 @@ public class SDKConst {
 	public static final String AP_KEY = "airpal.key.ap";
 //	public static final int PROTOCOL_COUNT 	= 3; 
 	
-	public static final int PROTOCOL_UNKNOWN 		= -0X01; 
-	public static final int PROTOCOL_MOORE 		= 0X00; 
-	public static final int PROTOCOL_BROADLINK 	= 0X01;
-	public static final int PROTOCOL_GREEN	 	= 0X02; 
+	//产品常量
+	public static final int PRODUCT_UNKNOWN 		= 0X00;		
+	
+	public static final int PRODUCT_AIRPAL_PL200 	= 0X0101;	//AirPal 爱宝乐PL200
+	public static final int PRODUCT_AIRPAL_PL500 	= 0X0102;	//AirPal 爱宝乐PL500
+    public static final int PRODUCT_CAIR 			= 0X0111;	//Cair 	净元凯尔
+    
+    public static final int PRODUCT_GREEN_WHITE 	= 0X0201;	//中立格林白色模块
+    public static final int PRODUCT_GREEN_BLACK1 	= 0X0202;	//中立格林黑色模块1
+    public static final int PRODUCT_GREEN_BLACK2 	= 0X0203;	//中立格林黑色模块2
+    
+    public static final int PRODUCT_BL_SP2 			= 0X0301;	//博联sp2插座
+    
+    public static final int PRODUCT_ROYALSTAR 		= 0X0401;	//荣事达智能水壶
+    //协议常量
+	public static final int PROTOCOL_UNKNOWN 	= -0X01; 
+	public static final int PROTOCOL_LIERDA 		= 0X00; 	//利尔达-黄工 	Json字符协议
+	public static final int PROTOCOL_BROADLINK 	= 0X01;		//博联插座		二进制协议
+	public static final int PROTOCOL_GREEN	 	= 0X02;		//中立格林		二进制协议
 //	public static final int PROTOCOL_TCL360	 	= 0X03;
-	public static final int[] PROTOCOL_FIND_SET 	= {0X00, 0x01}; 
+	
+	public static final int[] PROTOCOL_FIND_SET 	= {0X00}; 
 	public static final int[] PROTOCOL_TCP_SET 	= {0X00, 0X02}; 
 	public static final int[] PROTOCOL_UDP_SET 	= {0X01}; 
 
     public static final int[] PROTOCOL_PORT_COMM = {8899, 80, 502};
     public static final int[] PROTOCOL_PORT_FIND = {48899, 80, 502};
-    public static final DevType[] PROTOCOL_DEV_TYPE = {DevType.AIR_PURIFIER, DevType.PLUGIN, DevType.AIR_MONITOR};
+//    public static final DevType[] PROTOCOL_DEV_TYPE = {DevType.AIR_PURIFIER, DevType.PLUGIN, DevType.AIR_MONITOR};
 
     /** Wifi AP+STA Mode ip / port --- 中立格林**/
     public static final String PROTOCOL_GREEN_WIFI_SSID = "MXCHIP";

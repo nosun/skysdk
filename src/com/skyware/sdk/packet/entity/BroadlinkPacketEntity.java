@@ -80,7 +80,7 @@ public class BroadlinkPacketEntity {
 				byte[] byteMac = new byte[6];
 				System.arraycopy(byteFillArray, indexMac, byteMac, 0, 6);
 				
-				setKey(ConvertUtil.macByte2String(byteMac));
+				key = ConvertUtil.macByte2String(byteMac);
 				return true;
 			}
 		}
@@ -89,20 +89,14 @@ public class BroadlinkPacketEntity {
 
 	public static class DevCmd extends PacketEntity.DevCmd {
 
-		private String key;
+		protected String key;
+		
 		public DevCmd() {
 		}
 		public DevCmd(int sn, DevData data, String key) {
-			super(sn, data);
+			super(sn, data, -1);
 			this.key = key;
 		}
-		public String getKey() {
-			return key;
-		}
-		public void setKey(String key) {
-			this.key = key;
-		}
-
 
 		@Override
 		public int getProtocolType() {
@@ -111,12 +105,12 @@ public class BroadlinkPacketEntity {
 
 		@Override
 		public byte[] byteEncoder() {
-			if (getData() instanceof DevDataBroadlink == false) {
+			if (devData instanceof DevDataBroadlink == false) {
 				return null;
 			}
 			DevDataBroadlink bdata;
-			if (getData() instanceof DevDataBroadlink) {
-				bdata = (DevDataBroadlink) getData();
+			if (devData instanceof DevDataBroadlink) {
+				bdata = (DevDataBroadlink) devData;
 			} else {
 				return null;
 			}
@@ -126,8 +120,8 @@ public class BroadlinkPacketEntity {
 				if(bdata.getPower().equals(DevDataBroadlink.POWER_ON)) {
 					byte[] firstLine = new byte[]{
 							0x4d,(byte) 0xcf,0x00,0x00,0x11,0x27,0x6a,0x00};
-					byte[] snByte = ConvertUtil.snUnsignedShort2Byte(getSn());
-					byte[] macByte = ConvertUtil.macString2Byte(getKey());
+					byte[] snByte = ConvertUtil.snUnsignedShort2Byte(sn);
+					byte[] macByte = ConvertUtil.macString2Byte(key);
 					byte[] cmdType = CmdType.get(CMD_TYPE_ON);
 					
 					byte[] onTailor = new byte[]{
@@ -148,8 +142,8 @@ public class BroadlinkPacketEntity {
 				} else if (bdata.getPower().equals(DevDataBroadlink.POWER_OFF)) {
 					byte[] firstLine = new byte[]{
 							(byte) 0x8b,(byte) 0xcf,0x00,0x00,0x11,0x27,0x6a,0x00};
-					byte[] snByte = ConvertUtil.snUnsignedShort2Byte(getSn());
-					byte[] macByte = ConvertUtil.macString2Byte(getKey());
+					byte[] snByte = ConvertUtil.snUnsignedShort2Byte(sn);
+					byte[] macByte = ConvertUtil.macString2Byte(key);
 					byte[] cmdType = CmdType.get(CMD_TYPE_OFF);
 					
 					byte[] offTailor = new byte[]{
@@ -218,25 +212,25 @@ public class BroadlinkPacketEntity {
 			int snOffset = magicLen + 8;
 			byte[] snByte = new byte[2]; 
 			System.arraycopy(byteFillArray, snOffset, snByte, 0, 2);
-			setSn(ConvertUtil.snByte2UnsignedShort(snByte));
+			sn = ConvertUtil.snByte2UnsignedShort(snByte);
 			
 			int macOffset = snOffset + 2;
 			byte[] macByte = new byte[6]; 
 			System.arraycopy(byteFillArray, macOffset, macByte, 0, 6);
-			setKey(ConvertUtil.macByte2String(macByte));
+			key = ConvertUtil.macByte2String(macByte);
 			
 			int dataOffset = macOffset + 6;
 			byte[] dataByte = new byte[8]; 
 			System.arraycopy(byteFillArray, dataOffset, dataByte, 0, 8);
 			if(Arrays.equals(dataByte, CmdType.get(CMD_TYPE_ON))){
-				DevData data = new DevDataBroadlink();
-				data.setPower(DevDataBroadlink.POWER_ON);
-				setDevData(data);
+				DevData _data = new DevDataBroadlink();
+				_data.setPower(DevDataBroadlink.POWER_ON);
+				devData = _data;
 				return true;
 			} else if (Arrays.equals(dataByte, CmdType.get(CMD_TYPE_OFF))) {
-				DevData data = new DevDataBroadlink();
-				data.setPower(DevDataBroadlink.POWER_OFF);
-				setDevData(data);
+				DevData _data = new DevDataBroadlink();
+				_data.setPower(DevDataBroadlink.POWER_OFF);
+				devData = _data;
 				return true;
 			}
 			return false;
@@ -247,19 +241,18 @@ public class BroadlinkPacketEntity {
 		public JSONObject jsonEncoder() throws JSONException {
 			
 			JSONObject json = new JSONObject();
-			
 			json.put(cmdName, cmdValue);
 
-			if (getSn() != -1) {
-				json.put(snName, getSn());
+			if (sn != -1) {
+				json.put(snName, sn);
 			}
-			if (getKey() != null && !getKey().equals("")) {
-				json.put(macName, getKey());
+			if (key != null && !key.equals("")) {
+				json.put(macName, key);
 			}
 			
-			if (getDevData() != null) {
+			if (devData != null) {
 				//转成JSON格式，向上汇报
-				json.put(dataName, getDevData().jsonEncoder());
+				json.put(dataName, devData.jsonEncoder());
 			}
 					
 			return json;

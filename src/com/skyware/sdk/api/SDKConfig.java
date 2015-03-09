@@ -3,7 +3,9 @@ package com.skyware.sdk.api;
 public class SDKConfig {
 
 	private boolean isApMode = false;
+	private boolean enablePush = true;
 	private boolean isSaveMode = true;
+	private boolean hasCrashCollect = true;
 	
 	private String apSSID;
 	private String apPasswd;
@@ -12,6 +14,7 @@ public class SDKConfig {
 	
 	private String userId;
 	private boolean isLogin;
+	private int productType = SDKConst.PRODUCT_UNKNOWN;
 	
 	public boolean isApMode() {
 		return isApMode;
@@ -22,12 +25,31 @@ public class SDKConfig {
 		return this;
 	}
 	
+	public boolean isEnablePush() {
+		return enablePush;
+	}
+
+	public SDKConfig setEnablePush(boolean enablePush) {
+		this.enablePush = enablePush;
+		return this;
+	}
+
 	public boolean isSaveMode() {
 		return isSaveMode;
 	}
 
-	public void setSaveMode(boolean isSaveMode) {
+	public SDKConfig setSaveMode(boolean isSaveMode) {
 		this.isSaveMode = isSaveMode;
+		return this;
+	}
+
+	public boolean hasCrashCollect() {
+		return hasCrashCollect;
+	}
+
+	public SDKConfig setHasCrashCollect(boolean hasCrashCollect) {
+		this.hasCrashCollect = hasCrashCollect;
+		return this;
 	}
 
 	public String getApSSID() {
@@ -82,6 +104,14 @@ public class SDKConfig {
 	public SDKConfig setIsLogin(boolean isLogin) {
 		this.isLogin = isLogin;
 		return this;
+	}
+
+	public int getProductType() {
+		return productType;
+	}
+
+	public void setProductType(int productType) {
+		this.productType = productType;
 	}
 
 }

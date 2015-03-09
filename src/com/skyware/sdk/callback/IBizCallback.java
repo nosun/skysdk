@@ -121,4 +121,6 @@ public interface IBizCallback {
 	void onSDKError(ErrorConst errType, String errMsg);
 
 	void onSendTCPPacket(OutPacket packet);
+
+	void onRecvDevStatus(String json);
 }

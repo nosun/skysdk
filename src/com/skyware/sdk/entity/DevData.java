@@ -1,6 +1,6 @@
 package com.skyware.sdk.entity;
 
-public abstract class DevData implements IJsonEncoder{
+public  abstract  class DevData implements IJsonEncoder, IMCUCoder<Object>{
 	
 	/** 有效data字段的数量 */
 	protected int dataCount;
@@ -18,4 +18,14 @@ public abstract class DevData implements IJsonEncoder{
 	
 	public abstract void setPower(String power);
 	public abstract String getPower();
+	
+	@Override
+	public Object mcuCoder() {
+		return null;
+	}
+	
+	@Override
+	public boolean mcuDecoder(Object mcuData) {
+		return false;
+	}
 }

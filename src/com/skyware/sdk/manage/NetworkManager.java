@@ -4,6 +4,8 @@ import java.net.InetSocketAddress;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.json.JSONException;
+
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -14,7 +16,6 @@ import android.net.wifi.WifiManager;
 import android.os.Parcelable;
 import android.util.Log;
 
-import com.skyware.sdk.api.SDKConfig;
 import com.skyware.sdk.api.SDKConst;
 import com.skyware.sdk.api.SkySDK;
 import com.skyware.sdk.callback.IBizCallback;
@@ -73,10 +74,8 @@ public class NetworkManager {
 	/**	管理自增的SN，作为packet唯一标识 */
     private AtomicInteger mSn;
     
-    public int getSn()
-    {
-        if (mSn.get() >= SocketConst.SN_MAX)
-        {
+    public int getSn() {
+        if (mSn.get() >= SocketConst.SN_MAX) {
         	synchronized (this) {
         		mSn.set(mSn.get() % SocketConst.SN_MAX);
 			}
@@ -93,6 +92,9 @@ public class NetworkManager {
 	
 	/** 现有内网中有效的设备表 Key - DeviceInfo */
 	private ConcurrentHashMap<String, DeviceInfo> mLocalDevMap;
+	
+	/** 现有MQTT订阅的设备表 Key - DeviceInfo */
+	private ConcurrentHashMap<String, DeviceInfo> mMqttSubDevMap;
 	
 	public void addOutPacket(OutPacket packet) {
 		if (packet != null && mSendPacketMap != null) {
@@ -146,6 +148,7 @@ public class NetworkManager {
 	private void init(){
 		mSendPacketMap = new ConcurrentHashMap<Integer, OutPacket>();
 		mLocalDevMap = new ConcurrentHashMap<String, DeviceInfo>();
+		mMqttSubDevMap = new ConcurrentHashMap<String, DeviceInfo>();
 		mRecvStatusMap = new ConcurrentHashMap<Integer, InPacket>();
 		
 		mTcpComm = new TCPCommunication(mNetCallback);
@@ -163,6 +166,7 @@ public class NetworkManager {
 		mLocalDevMap.clear();
 		mSendPacketMap.clear();
 		mRecvStatusMap.clear();
+		mMqttSubDevMap.clear();
 		
 		mUdpComm.finallize();
 		mTcpComm.finallize();
@@ -177,6 +181,8 @@ public class NetworkManager {
 		
 		mSendPacketMap = null;
 		mLocalDevMap = null;
+		mRecvStatusMap = null;
+		mMqttSubDevMap = null;
 		
 		mTcpComm = null;
 		mUdpComm = null;
@@ -244,17 +250,18 @@ public class NetworkManager {
 	public boolean stopConnectAp(String key) {
 		return mTcpComm.stopTCPTask(key);
 	}     
+	
 	@Deprecated
 	public boolean sendPacketToAp(String key, PacketType type, CmdInfo cmd, int sn, boolean isPersist) {
 	
 		OutPacket packet = null;
 		switch (type) {
 		case DEVCOMMAND:
-			packet = PacketHelper.getDevCmdPacket(sn, cmd.getData(), key, SDKConst.PROTOCOL_GREEN);
+			packet = PacketHelper.getDevCmdPacket(sn, cmd.getData(), key, SDKConst.PROTOCOL_GREEN, SDKConst.PRODUCT_GREEN_BLACK2);
 			break;
 			//TODO 其他Packet
 		case DEVCHECK:
-			packet = PacketHelper.getDevCheckPacket(sn, key, SDKConst.PROTOCOL_GREEN);
+			packet = PacketHelper.getDevCheckPacket(sn, SDKConst.PROTOCOL_GREEN);
 			break;
 		default:
 			break;
@@ -341,6 +348,9 @@ public class NetworkManager {
 	 */
 	public boolean sendPacketToDevice(String deviceKey, PacketType type, CmdInfo cmd, int sn, boolean isPersist) {
 //		packet.setSn(getSn());	在Biz中生成sn
+		if (mLocalDevMap == null) {
+			return false;
+		}
 		DeviceInfo devInfo = mLocalDevMap.get(deviceKey); 
 		if (devInfo == null || devInfo.getIp() == null ||
 				devInfo.getIp().equals("") || devInfo.getProtocol() == SDKConst.PROTOCOL_UNKNOWN) {
@@ -349,14 +359,17 @@ public class NetworkManager {
 		
 		OutPacket packet = null;
 		switch (type) {
+		case DEVLOGIN:
+			packet = PacketHelper.getDevLoginPacket(sn, devInfo.getProtocol());
+			break;
+		case DEVCHECK:
+			packet = PacketHelper.getDevCheckPacket(sn, devInfo.getProtocol());
+			break;
 		case DEVCOMMAND:
 //DEBUG	 	packet = PacketHelper.getDevCmdPacket(sn, cmd.wrapDevData(targetProtocol), deviceKey, targetProtocol);
-			packet = PacketHelper.getDevCmdPacket(sn, cmd.getData(), deviceKey, devInfo.getProtocol());
+			packet = PacketHelper.getDevCmdPacket(sn, cmd.getData(), deviceKey, devInfo.getProtocol(), devInfo.getProductType());
 			break;
 			//TODO 其他Packet
-		case DEVCHECK:
-			packet = PacketHelper.getDevCheckPacket(sn, deviceKey, devInfo.getProtocol());
-			break;
 		default:
 			break;
 		}
@@ -424,7 +437,7 @@ public class NetworkManager {
 		
 		@Override
 		public void onConnectTCPSuccess(IOHandler h, String key) {
-			if (mBizCallback != null) {
+			if (mBizCallback != null && mLocalDevMap != null) {
 				// 改变设备的网络状态为内网连接
 				DeviceInfo devInfo = mLocalDevMap.get(key);
 				if (devInfo != null) {
@@ -462,13 +475,13 @@ public class NetworkManager {
 				case DEVFIND_ACK:
 					PacketEntity.DevFind.Ack ack = PacketHelper.resolveDevFindAck(packet, protocol);
 					if (mLocalDevMap!=null && ack!=null) {
-						String devKey = ack.getKey();
+						String devKey = ack.key;
 						if (devKey != null) {
 							if(mLocalDevMap.containsKey(devKey) && mLocalDevMap.get(devKey) != null 
 									&& !mLocalDevMap.get(devKey).equals("")) {
 								// 现有设备ip变化
 //								String oldIp = mDeviceAddrMap.get(ack.getKey()).toString().substring(1);
-								DeviceInfo devInfo = mLocalDevMap.get(ack.getKey());
+								DeviceInfo devInfo = mLocalDevMap.get(ack.key);
 								String oldIp = devInfo.getIp();
 								String newIp = packet.getSourceAddr().getAddress().getHostAddress();
 								// 更新ip
@@ -479,10 +492,15 @@ public class NetworkManager {
 //								mDeviceAddrMap.put(ack.getKey(), packet.getSourceAddr().getAddress());
 //								mDeviceProtocolMap.put(ack.getKey(), protocol);
 								DeviceInfo newDevInfo = new DeviceInfo();
-								newDevInfo.setMac(ack.getKey());
+								newDevInfo.setMac(ack.key);
 								newDevInfo.setIp(packet.getSourceAddr().getAddress().getHostAddress());
 								newDevInfo.setProtocol(protocol);
-								newDevInfo.setDevType(ProtocolHelper.getDevType(protocol));
+								//TODO 获取设备类型，比如净化器、插座之类的
+//								newDevInfo.setDevType(ProtocolHelper.getDevType(protocol));
+								//TODO 获取产品类型，此处用默认设置
+								if (SkySDK.getConfig()!=null) {
+									newDevInfo.setProductType(SkySDK.getConfig().getProductType());
+								}
 								
 								mLocalDevMap.put(devKey, newDevInfo);
 								//TODO 设备类型的判断应该由协议增加一个字段来判断
@@ -498,13 +516,25 @@ public class NetworkManager {
 					
 						//博联插座特殊逻辑：命令ack即为状态上报
 						if (protocol == SDKConst.PROTOCOL_BROADLINK) {
-							DevStatus devStatus1 = PacketHelper.resolveDevStatPacket(packet, protocol);
-							mBizCallback.onRecvDevStatus(devStatus1);
+							String key = PacketHelper.resolveDeviceKey(packet, protocol);
+							int productType = SDKConst.PRODUCT_UNKNOWN;
+							if(mLocalDevMap !=null && mLocalDevMap.get(key)!=null){
+								productType = mLocalDevMap.get(key).getProductType();
+								// TODO 如果本地Map中无此设备，还是否需要上报？
+							}
+							DevStatus devStatus = PacketHelper.resolveDevStatPacket(packet, protocol, productType);
+							mBizCallback.onRecvDevStatus(devStatus);
 						}
 					}
 					break;
 				case DEVSTATUS:
-					DevStatus devStatus = PacketHelper.resolveDevStatPacket(packet, protocol);
+					String key = PacketHelper.resolveDeviceKey(packet, protocol);
+					int productType = SDKConst.PRODUCT_UNKNOWN;
+					if(mLocalDevMap != null && mLocalDevMap.get(key)!=null){
+						productType = mLocalDevMap.get(key).getProductType();
+						// TODO 如果本地Map中无此设备，还是否需要上报？
+					}
+					DevStatus devStatus = PacketHelper.resolveDevStatPacket(packet, protocol, productType);
 					mBizCallback.onRecvDevStatus(devStatus);
 					//TODO 发送ACK
 					break;
@@ -545,11 +575,21 @@ public class NetworkManager {
 						}
 						break;
 					case DEVSTATUS:
-						// 如果包中无sn字段，直接上报
-						// 如果已经推送过，则不上报
+						// 如果已经推送过，则不上报  如果包中无sn字段，直接上报
 						if(packet.getSn() <= 0 || addStatusPacket(packet.getSn(), packet)){
-							DevStatus devStatus = PacketHelper.resolveDevStatPacket(packet, protocol);
+							String key = PacketHelper.resolveDeviceKey(packet, protocol);
+							int productType = SDKConst.PRODUCT_UNKNOWN;
+							if(mLocalDevMap != null && mLocalDevMap.get(key)!=null){
+								productType = mLocalDevMap.get(key).getProductType();
+								// TODO 如果本地Map中无此设备，还是否需要上报？
+							}
+							DevStatus devStatus = PacketHelper.resolveDevStatPacket(packet, protocol, productType);
 							mBizCallback.onRecvDevStatus(devStatus);
+							try {
+								mBizCallback.onRecvDevStatus(devStatus.jsonEncoder().toString());
+							} catch (JSONException e) {
+								e.printStackTrace();
+							}
 						}
 						
 						//TODO 发送ACK
@@ -571,16 +611,16 @@ public class NetworkManager {
 			packet.setReceiveTime(System.currentTimeMillis());
 			
 			//TODO 根据什么来解析具体的协议？
-			int protocol = SDKConst.PROTOCOL_MOORE;
+			int protocol = SDKConst.PROTOCOL_LIERDA;
 			
 			//解析TCP的sn和Type
 			int sn = PacketHelper.resolvePacketSn(packet, protocol);
 			if (sn >= 0) {
 				packet.setSn(sn);
 			}
-			
+
 			PacketType type= PacketHelper.resolvePacketType(packet, protocol);
-			if (type != null) {
+			if (type != null && mBizCallback != null) {
 				packet.setType(type);
 			
 				switch(type){
@@ -594,14 +634,30 @@ public class NetworkManager {
 					}
 					break;
 				case NETSTATUS:
-					
+					//TODO 上报到指定接口
+					mBizCallback.onRecvDevStatus(new String(packet.getContent()));
 					break;
 				case DEVSTATUS:
 					// 如果已经推送过，则不上报
 					if(addStatusPacket(packet.getSn(), packet)){
-						DevStatus devStatus = PacketHelper.resolveDevStatPacket(packet, protocol);
+						String key = PacketHelper.resolveDeviceKey(packet, protocol);
+						int productType = SDKConst.PRODUCT_UNKNOWN;
+						if(mMqttSubDevMap != null && mMqttSubDevMap.get(key)!=null){
+							productType = mMqttSubDevMap.get(key).getProductType();
+							// TODO 如果订阅Map中无此设备，还是否需要上报？
+						} else {
+							if (SkySDK.getConfig()!=null) {
+								productType = SkySDK.getConfig().getProductType();
+							}
+						}
+						DevStatus devStatus = PacketHelper.resolveDevStatPacket(packet, protocol, productType);
 						if (devStatus != null) {
 							mBizCallback.onRecvDevStatus(devStatus);
+							try {
+								mBizCallback.onRecvDevStatus(devStatus.jsonEncoder().toString());
+							} catch (JSONException e) {
+								e.printStackTrace();
+							}
 						}
 					}
 					//TODO 发送ACK

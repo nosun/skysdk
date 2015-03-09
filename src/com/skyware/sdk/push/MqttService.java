@@ -1,6 +1,12 @@
 package com.skyware.sdk.push;
 
 import java.io.IOException;
+import java.util.Random;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import com.ibm.mqtt.IMqttClient;
 import com.ibm.mqtt.MqttClient;
@@ -8,10 +14,13 @@ import com.ibm.mqtt.MqttException;
 import com.ibm.mqtt.MqttPersistence;
 import com.ibm.mqtt.MqttPersistenceException;
 import com.ibm.mqtt.MqttSimpleCallback;
+import com.skyware.sdk.R;
 import com.skyware.sdk.api.SDKConst;
 import com.skyware.sdk.api.SkySDK;
+import com.skyware.sdk.consts.SocketConst;
 import com.skyware.sdk.manage.BizManager;
 import com.skyware.sdk.manage.NetworkManager;
+import com.skyware.sdk.thread.SingleExecutor;
 
 import android.app.AlarmManager;
 import android.app.Notification;
@@ -23,6 +32,9 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
+import android.content.pm.ApplicationInfo;
+import android.content.pm.PackageManager;
+import android.content.pm.PackageManager.NameNotFoundException;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.IBinder;
@@ -103,7 +115,7 @@ public class MqttService extends Service
 	private static final int		NOTIF_CONNECTED = 0;	
 		
 	// This is the instance of an MQTT connection.
-	private MQTTConnection			mConnection;
+	private static MQTTConnection			mConnection;
 	private long					mStartTime;
 	
 
@@ -126,6 +138,22 @@ public class MqttService extends Service
 		Intent i = new Intent(ctx, MqttService.class);
 		i.setAction(ACTION_KEEPALIVE);
 		ctx.startService(i);
+	}
+	
+	
+	public static void subcribe(String topicName) throws MqttException {
+		//TODO 此处应该用Binder机制与Service进行通信
+		if (mConnection != null) {
+			mConnection.subscribeToTopic(topicName);
+		} 
+	}
+	
+
+	public static void publish(String topicName, String message) throws MqttException {
+		//TODO 此处应该用Binder机制与Service进行通信
+		if (mConnection != null) {
+			mConnection.publishToTopic(topicName, message);
+		} 
 	}
 
 	@Override
@@ -187,7 +215,7 @@ public class MqttService extends Service
 	 */
 	@Override
 	public int onStartCommand(Intent intent, int flags, int startId) {
-		super.onStart(intent, startId);
+		super.onStartCommand(intent, flags, startId);
 		log("Service started with intent=" + intent);
 
 		// Do an appropriate action based on the intent.
@@ -464,9 +492,27 @@ public class MqttService extends Service
 	    	
         	// Create the client and connect
         	mqttClient = MqttClient.createMqttClient(mqttConnSpec, MQTT_PERSISTENCE);
-        	String clientID = MQTT_CLIENT_ID + "/" + mPrefs.getString(PREF_DEVICE_ID, "");
         	
-        	mqttClient.connect(clientID, MQTT_CLEAN_START, MQTT_KEEP_ALIVE);
+        	final String clientID = getUniqClientId();
+        	
+        	SingleExecutor exec = new SingleExecutor();
+        	Future<Object> future = exec.submit(new Callable<Object>() {
+				@Override
+				public Object call() throws Exception {
+					mqttClient.connect(clientID, MQTT_CLEAN_START, MQTT_KEEP_ALIVE);
+					return null;
+				}
+			});
+        	try {
+				future.get(SocketConst.TIMEOUT_MQTTCONN_WAIT, TimeUnit.MILLISECONDS);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			} catch (ExecutionException e) {
+				e.printStackTrace();
+			} catch (TimeoutException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 
 	        // register this client app has being able to receive messages
 			mqttClient.registerSimpleHandler(this);
@@ -542,7 +588,7 @@ public class MqttService extends Service
 		 */
 		public void publishArrived(String topicName, byte[] payload, int qos, boolean retained) {
 //			String s = new String(payload);
-//			showNotification(s);	
+//			showNotification(s);
 			log("Got message: " + new String(payload));
 			
 			//上报NetworkManager
@@ -557,5 +603,25 @@ public class MqttService extends Service
 			// publish to a keep-alive topic
 			publishToTopic(MQTT_CLIENT_ID + "/keepalive", mPrefs.getString(PREF_DEVICE_ID, ""));
 		}		
+	}
+	
+	
+	private String getUniqClientId() {
+		String appid = null;
+		try {
+			ApplicationInfo appInfo = getPackageManager().getApplicationInfo(getPackageName(), PackageManager.GET_META_DATA);
+			appid = String.valueOf(appInfo.metaData.get("SKYWARE_APPID"));
+		} catch (NameNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} finally {
+			if (appid == null) {
+				appid = String.valueOf(new Random().nextInt(99)+1);
+			}
+		}
+		
+		return new StringBuilder(MQTT_CLIENT_ID)
+		.append("/").append(appid)
+		.append("/").append(mPrefs.getString(PREF_DEVICE_ID, "")).toString() ;
 	}
 }

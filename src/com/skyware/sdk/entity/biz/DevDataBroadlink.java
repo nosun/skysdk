@@ -4,10 +4,9 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import com.skyware.sdk.entity.DevData;
-import com.skyware.sdk.entity.IMCUCoder;
 
 
-public class DevDataBroadlink extends DevData implements IMCUCoder<Byte[]>{
+public class DevDataBroadlink extends DevData{
 
 	private String power;
 	
@@ -39,7 +38,7 @@ public class DevDataBroadlink extends DevData implements IMCUCoder<Byte[]>{
 	}
 
 	@Override
-	public boolean mcuDecoder(Byte[] mcuData) {
+	public boolean mcuDecoder(Object obj) {
 		// TODO Auto-generated method stub
 		return false;
 	}

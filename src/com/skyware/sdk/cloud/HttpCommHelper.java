@@ -8,7 +8,6 @@ import java.util.Map;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import com.skyware.sdk.entity.CmdInfo;
 import com.skyware.sdk.entity.DeviceInfo;
 import com.skyware.sdk.util.HttpUtils;
 import com.skyware.sdk.util.HttpUtils.HttpResult;
@@ -48,7 +47,7 @@ public class HttpCommHelper {
 	// 获取所有的绑定设备数据
 	public static String URL_DEVICE_BINDINGDEVICES = CLOUDSERVIER + "/mdot/device/bindDevices";
 	// 控制设备接口
-	public static String URL_CONTROL= CLOUDSERVIER +"/mdot/message/sendMg";
+	public static String URL_CONTROL=CLOUDSERVIER+"/m/message/sendMg";
 	
 	/** 
 	 *	获取所有绑定的设备数据
@@ -114,29 +113,35 @@ public class HttpCommHelper {
 		try {
 			//HTTP Post请求
 			Map<String, String> params = new HashMap<String, String>();
-			params.put(KEY_USR_ID, 			userId);
-			params.put(KEY_CMD_DEV_ID, 		devId);
-			params.put(KEY_CMD_CONTENT, 	cmdStr);
+			if (userId != null && !userId.equals("")) {
+				params.put(KEY_USR_ID, 			userId);
+			}
+			if (devId != null && !devId.equals("")) {
+				params.put(KEY_CMD_DEV_ID, 		devId);
+			}
+			if (cmdStr != null && !cmdStr.equals("")) {
+				params.put(KEY_CMD_CONTENT, 	cmdStr);
+			}
 			result = HttpUtils.doPost(URL_CONTROL, params);
 			
-			statusCode = result.getStatusCode();
-//			JSONObject json = new JSONObject(result.getRespString());
-			respString = result.getRespString();
-			switch (statusCode) {
-			case 200:
-				if (respString != null){
-					if (respString.contains(VALUE_CMD_SUCCESS)) {
-						return true;
+			if (result != null) {
+				statusCode = result.getStatusCode();
+				respString = result.getRespString();
+				switch (statusCode) {
+				case 200:
+					if (respString != null){
+						if (respString.contains(VALUE_CMD_SUCCESS)) {
+							return true;
+						}
+						if (respString.contains(VALUE_CMD_FAILED)) {
+							return false;
+						}
 					}
-					if (respString.contains(VALUE_CMD_FAILED)) {
-						return false;
-					}
+					break;
+				default:
+					throw new HttpException(statusCode);
 				}
-				break;
-			default:
-				throw new HttpException(statusCode);
 			}
-
 		} catch (IOException e) {
 			e.printStackTrace();
 			if (e instanceof SocketTimeoutException) {

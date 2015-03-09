@@ -44,7 +44,7 @@ public class ProtocolHelper {
 		return false;
 	}
 	
-	public static DevType getDevType(int protocol) {
-		 return SDKConst.PROTOCOL_DEV_TYPE[protocol];
-	}
+//	public static DevType getDevType(int protocol) {
+//		 return SDKConst.PROTOCOL_DEV_TYPE[protocol];
+//	}
 }

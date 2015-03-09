@@ -53,8 +53,8 @@ public class PacketHelper {
 		
 		PacketEntity.DevFind broadcastFind;
 		switch (protocol) {
-		case SDKConst.PROTOCOL_MOORE:
-			broadcastFind = new MoorePacketEntity.DevFind();
+		case SDKConst.PROTOCOL_LIERDA:
+			broadcastFind = new LierdaPacketEntity.DevFind();
 			packet.setContent(broadcastFind.byteEncoder());
 			break;
 		case SDKConst.PROTOCOL_BROADLINK:
@@ -80,8 +80,8 @@ public class PacketHelper {
 		
 		PacketEntity.HeartBeat heartBeat;
 		switch (protocol) {
-		case SDKConst.PROTOCOL_MOORE:
-			heartBeat = new MoorePacketEntity.HeartBeat(sn);
+		case SDKConst.PROTOCOL_LIERDA:
+			heartBeat = new LierdaPacketEntity.HeartBeat(sn);
 			packet.setContent(heartBeat.byteEncoder());
 			break;
 		case SDKConst.PROTOCOL_BROADLINK:
@@ -94,13 +94,44 @@ public class PacketHelper {
 	}
 	
 	/**
+	 * 获取设备登录包
+	 * 
+	 * @param sn	请求-应答标识
+	 * @param key 	设备key
+	 * @param protocol	协议
+	 * @return OutPacket 心跳包
+	 */
+	public static OutPacket getDevLoginPacket(int sn, int protocol) {
+		OutPacket packet = new OutPacket();
+		
+		packet.setType(PacketType.DEVLOGIN);
+		packet.setSn(sn);
+		packet.setProtocolType(protocol);
+		
+		PacketEntity.DevLogin devLogin;
+		switch (protocol) {
+		case SDKConst.PROTOCOL_LIERDA:
+			devLogin = new LierdaPacketEntity.DevLogin(sn);
+			packet.setContent(devLogin.byteEncoder());
+			break;
+//		case SDKConst.PROTOCOL_GREEN:
+//			devCheck = new GreenPacketEntity.DevCheck();
+//			packet.setContent(devCheck.byteEncoder());
+//			break;
+		}		
+
+		return packet.getContent() != null? packet : null;
+	}
+	
+	/**
 	 * 获取设备查询包
 	 * 
 	 * @param sn	请求-应答标识
-	 * @param targetAddr 发送目标地址
+	 * @param key 	设备key
+	 * @param protocol	协议
 	 * @return OutPacket 心跳包
 	 */
-	public static OutPacket getDevCheckPacket(int sn, String key, int protocol) {
+	public static OutPacket getDevCheckPacket(int sn, int protocol) {
 		OutPacket packet = new OutPacket();
 		
 		packet.setType(PacketType.DEVCHECK);
@@ -109,8 +140,8 @@ public class PacketHelper {
 		
 		PacketEntity.DevCheck devCheck;
 		switch (protocol) {
-		case SDKConst.PROTOCOL_MOORE:
-			devCheck = new MoorePacketEntity.DevCheck(sn);
+		case SDKConst.PROTOCOL_LIERDA:
+			devCheck = new LierdaPacketEntity.DevCheck(sn);
 			packet.setContent(devCheck.byteEncoder());
 			break;
 		case SDKConst.PROTOCOL_GREEN:
@@ -121,16 +152,18 @@ public class PacketHelper {
 
 		return packet.getContent() != null? packet : null;
 	}
-	
+
 	/**
-	 * 获取设备命令包
-	 * 
-	 * @param sn	请求-应答标识
-	 * @param data 命令实体
-	 * @param key	目标设备key
-	 * @return OutPacket 心跳包	null--转码失败
+	 *	获取设备命令包
+	 *
+	 *	@param sn		请求-应答标识
+	 *	@param data		命令实体
+	 *	@param key		目标设备key
+	 *	@param protocol		协议
+	 *	@param product		产品
+	 *	@return	OutPacket 命令包	null--转码失败
 	 */
-	public static OutPacket getDevCmdPacket(int sn, DevData data, String key, int protocol) {
+	public static OutPacket getDevCmdPacket(int sn, DevData data, String key, int protocol, int product) {
 		OutPacket packet = new OutPacket();
 
 		packet.setType(PacketType.DEVCOMMAND);
@@ -139,8 +172,8 @@ public class PacketHelper {
 		
 		PacketEntity.DevCmd devCmd;
 		switch (protocol) {
-		case SDKConst.PROTOCOL_MOORE:
-			devCmd = new MoorePacketEntity.DevCmd(sn, data);
+		case SDKConst.PROTOCOL_LIERDA:
+			devCmd = new LierdaPacketEntity.DevCmd(sn, data, product);
 			packet.setContent(devCmd.byteEncoder());
 			break;
 		case SDKConst.PROTOCOL_BROADLINK:
@@ -166,11 +199,11 @@ public class PacketHelper {
 	 */
 	public static int resolvePacketSn(Packet packet, int protocol) {
 		switch (protocol) {
-		case SDKConst.PROTOCOL_MOORE:
+		case SDKConst.PROTOCOL_LIERDA:
 			try {
 				JSONObject mJson = new JSONObject(new String(packet.getContent()));
-			
-				return mJson.getInt(MoorePacketEntity.snName);
+
+				return mJson.getInt(LierdaPacketEntity.snName);
 			} catch (JSONException e) {
 //				e.printStackTrace();  //TODO 广播包
 			}
@@ -204,38 +237,38 @@ public class PacketHelper {
 	public static PacketType resolvePacketType(Packet packet, int protocol) {
 		
 		switch (protocol) {
-		case SDKConst.PROTOCOL_MOORE:
+		case SDKConst.PROTOCOL_LIERDA:
 			try {
 				JSONObject mJson = new JSONObject(new String(packet.getContent()));
 				
 //				Log.e("PacketHelper", "InPakcet: " + mJson.toString(3));
 				
-				String cmdValue = mJson.optString(MoorePacketEntity.cmdName);
+				String cmdValue = mJson.optString(LierdaPacketEntity.cmdName);
 				
 				// 如果不包含 cmd 项，则可能为设备网络状态上报
 				// 形如：{"deviceOnline":"0","deviceId":"832250229"}
 				if (cmdValue == null || cmdValue.equals("")) {
-					if (mJson.opt(MoorePacketEntity.netStatusName) != null) {
+					if (mJson.opt(LierdaPacketEntity.netStatusName) != null) {
 						return PacketType.NETSTATUS;
 					}
 				}
 				
 				if (packet instanceof InPacket) {
-					if (cmdValue.equals(MoorePacketEntity.HeartBeat.cmdValue)) {
+					if (cmdValue.equals(LierdaPacketEntity.HeartBeat.cmdValue)) {
 						//心跳ACK
 						return PacketType.HEARTBEAT_ACK; 
-					} else if(cmdValue.equals(MoorePacketEntity.DevCmd.cmdValue)) {
+					} else if(cmdValue.equals(LierdaPacketEntity.DevCmd.cmdValue)) {
 						//指令ACK
 						return PacketType.DEVCOMMAND_ACK; 
-					} else if(cmdValue.equals(MoorePacketEntity.DevStatus.cmdValue)) {
+					} else if(cmdValue.equals(LierdaPacketEntity.DevStatus.cmdValue)) {
 						//状态上报
 						return PacketType.DEVSTATUS; 
 					} 
 				} else if (packet instanceof OutPacket) {
-					if (cmdValue.equals(MoorePacketEntity.HeartBeat.cmdValue)) {
+					if (cmdValue.equals(LierdaPacketEntity.HeartBeat.cmdValue)) {
 						//心跳
 						return PacketType.HEARTBEAT; 
-					} else if(cmdValue.equals(MoorePacketEntity.DevCmd.cmdValue)) {
+					} else if(cmdValue.equals(LierdaPacketEntity.DevCmd.cmdValue)) {
 						//指令
 						return PacketType.DEVCOMMAND; 
 					} 
@@ -267,16 +300,45 @@ public class PacketHelper {
 	
 	
 	/**
+	 *	获取包的mac
+	 *
+	 *	@param packet		包
+	 *	@param protocol		协议
+	 *	@return devKey null -- 解析失败
+	 */
+	public static String resolveDeviceKey(Packet packet, int protocol) {
+		switch (protocol) {
+		case SDKConst.PROTOCOL_LIERDA:
+			try {
+				JSONObject mJson = new JSONObject(new String(packet.getContent()));
+				
+				return mJson.getString(LierdaPacketEntity.macName);
+			} catch (JSONException e) {
+//				e.printStackTrace();  //TODO 广播包
+			}
+			return null;
+		case SDKConst.PROTOCOL_BROADLINK:
+			//TODO 博联插座
+			return null;
+		case SDKConst.PROTOCOL_GREEN:
+			//TODO 中立格林
+			return null;
+		default:
+			return null;
+		}
+	}
+	
+	/**
 	 *	解析设备状态包
 	 *
 	 *	@param packet
 	 *	@return
 	 */
-	public static PacketEntity.DevStatus resolveDevStatPacket(InPacket packet, int protocol) {
+	public static PacketEntity.DevStatus resolveDevStatPacket(InPacket packet, int protocol, int product) {
 		PacketEntity.DevStatus status;
 		switch (protocol) {
-		case SDKConst.PROTOCOL_MOORE:
-			status = new MoorePacketEntity.DevStatus();
+		case SDKConst.PROTOCOL_LIERDA:
+			status = new LierdaPacketEntity.DevStatus(product);
 			return status.byteDecoder(packet.getContent())? status: null;
 		case SDKConst.PROTOCOL_BROADLINK:
 			//TODO 博联插座
@@ -301,8 +363,8 @@ public class PacketHelper {
 	public static PacketEntity.DevFind.Ack resolveDevFindAck(Packet packet, int protocol) {
 		PacketEntity.DevFind.Ack findAck;
 		switch (protocol) {
-		case SDKConst.PROTOCOL_MOORE:
-			findAck = new MoorePacketEntity.DevFind.Ack();
+		case SDKConst.PROTOCOL_LIERDA:
+			findAck = new LierdaPacketEntity.DevFind.Ack();
 			return findAck.byteDecoder(packet.getContent())? findAck: null;
 		case SDKConst.PROTOCOL_BROADLINK:
 			//TODO 博联插座

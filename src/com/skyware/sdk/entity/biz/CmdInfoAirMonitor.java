@@ -10,7 +10,7 @@ public class CmdInfoAirMonitor extends CmdInfo{
 	
 	public void setDevStatusCheck() {
 		if (getData() instanceof DevDataGreen) {
-			((DevDataGreen)getData()).setPower(DevDataHezhong.VALUE_ON_STATE);
+			((DevDataGreen)getData()).setPower(DevDataAirpal.VALUE_ON_STATE);
 		}
 	}
 	

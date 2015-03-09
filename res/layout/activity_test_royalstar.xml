@@ -1,0 +1,298 @@
+<RelativeLayout xmlns:tools="http://schemas.android.com/tools"
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent" >
+
+    <ScrollView
+        android:id="@+id/sv_result"
+        android:layout_width="fill_parent"
+        android:layout_height="130dp"
+        android:fadeScrollbars="false"
+        android:scrollbarAlwaysDrawVerticalTrack="true"
+        android:scrollbars="vertical" >
+
+        <TextView
+            android:id="@+id/tv_result"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:scrollbars="vertical"
+            android:text="请您将wifi模块同一个局域网下，app会自动发现模块"
+            android:textSize="12sp" />
+    </ScrollView>
+
+    <RelativeLayout
+        android:id="@+id/layout_dev_smartpot"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/sv_result"
+        android:layout_marginTop="10dp" >
+
+        <TextView
+            android:id="@+id/tv_dev_info"
+            android:layout_width="120dp"
+            android:layout_height="wrap_content"
+            android:text="dev_info" />
+
+        <Button
+            android:id="@+id/btn_start"
+            android:layout_width="70dp"
+            android:layout_height="40dp"
+            android:layout_alignParentLeft="true"
+            android:layout_below="@+id/tv_dev_info"
+            android:text="连接"
+            android:textSize="16sp" />
+
+        <Button
+            android:id="@+id/btn_stop"
+            android:layout_width="70dp"
+            android:layout_height="40dp"
+            android:layout_alignBaseline="@+id/btn_start"
+            android:layout_marginLeft="6dp"
+            android:layout_toRightOf="@+id/btn_start"
+            android:text="断开"
+            android:textSize="16sp" />
+
+        <!--
+             <Button
+            android:id="@+id/btn_login"
+            android:layout_width="70dp"
+            android:layout_height="40dp"
+            android:layout_alignBaseline="@+id/btn_stop"
+            android:layout_marginLeft="6dp"
+            android:layout_toRightOf="@+id/btn_stop"
+            android:text="登录"
+            android:textSize="16sp" />
+        
+        <Button
+            android:id="@+id/btn_check"
+            android:layout_width="70dp"
+            android:layout_height="40dp"
+            android:layout_alignBaseline="@+id/btn_login"
+            android:layout_marginLeft="6dp"
+            android:layout_toRightOf="@+id/btn_login"
+            android:text="查询"
+            android:textSize="16sp" />
+        -->
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_toRightOf="@+id/btn_stop"
+            android:layout_marginLeft="10dp"
+            android:orientation="vertical">
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal" >
+
+                <TextView
+                    android:id="@+id/tv_dev_temp"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="温度:" />
+
+                <TextView
+                    android:id="@+id/tv_dev_temp_value"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginLeft="10dp"
+                    android:text="   " />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal" >
+
+                <TextView
+                    android:id="@+id/tv_dev_error"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="故障状态:" />
+
+                <TextView
+                    android:id="@+id/tv_dev_error_value"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                   	android:layout_marginLeft="10dp"
+                    android:text="   " />
+            </LinearLayout>
+            
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal" >
+
+                <TextView
+                    android:id="@+id/tv_dev_stat"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="当前状态:" />
+
+                <TextView
+                    android:id="@+id/tv_dev_stat_value"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginLeft="10dp"
+                    android:text="   " />
+            </LinearLayout>
+            
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal" >
+
+                <TextView
+                    android:id="@+id/tv_dev_time"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="煮水加水剩余时间:" />
+
+                <TextView
+                    android:id="@+id/tv_dev_time_value"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                   	android:layout_marginLeft="10dp"
+                    android:text="   " />
+            </LinearLayout>
+        </LinearLayout>
+
+        <!--
+         	<TextView
+            android:id="@+id/tv_dev_net_status"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@+id/tv_dev_pm_key"
+            android:text="设备网络状态：" />
+        -->
+
+        <RelativeLayout
+            android:id="@+id/layout_dev_switch"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:layout_below="@+id/btn_start"
+            android:layout_marginTop="3dp" >
+
+            <TextView
+                android:id="@+id/tv_power"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="电源" />
+
+            <RadioGroup
+                android:id="@+id/rg_power"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_toRightOf="@+id/tv_power"
+                android:orientation="horizontal" >
+
+				<RadioButton
+                    android:id="@+id/rb_power_on"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="on" />
+
+                <RadioButton
+                    android:id="@+id/rb_power_off"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="off" />
+            </RadioGroup>
+
+            <!--
+            <Switch
+                android:id="@+id/switch_child_lock"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignBaseline="@+id/switch_power"
+                android:layout_alignParentRight="true"
+                android:text="童锁" />
+
+            <Switch
+                android:id="@+id/switch_uv"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentLeft="true"
+                android:layout_below="@+id/switch_power"
+                android:text=" UV  " />
+
+            <Switch
+                android:id="@+id/switch_anion"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignBaseline="@+id/switch_uv"
+                android:layout_alignParentRight="true"
+                android:text="负离子" />
+            -->
+
+        </RelativeLayout>
+
+        <com.skyware.sdk.test.ui.FlowRadioGroup
+            android:id="@+id/rg_mode"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentLeft="true"
+            android:layout_below="@+id/layout_dev_switch"
+            android:layout_marginTop="5dp"
+            android:orientation="horizontal" >
+
+            <TextView
+                android:id="@+id/tv_mode"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="模式" />
+
+            <RadioButton
+                android:id="@+id/rb_mode_auto"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:checked="true"
+                android:text="全自动" />
+
+            <RadioButton
+                android:id="@+id/rb_mode_manual_heat"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="手动煮水" />
+
+            <RadioButton
+                android:id="@+id/rb_mode_manual_add"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="手动加水" />
+
+            <RadioButton
+                android:id="@+id/rb_mode_tea1"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="泡茶1" />
+
+            <RadioButton
+                android:id="@+id/rb_mode_tea2"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="泡茶2" />
+
+            <RadioButton
+                android:id="@+id/rb_mode_tea3"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="泡茶3" />
+
+            <RadioButton
+                android:id="@+id/rb_mode_tea4"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="泡茶4" />
+
+            <RadioButton
+                android:id="@+id/rb_mode_tea5"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="泡茶5" />
+        </com.skyware.sdk.test.ui.FlowRadioGroup>
+
+        
+    </RelativeLayout>
+</RelativeLayout>

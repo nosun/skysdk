@@ -32,7 +32,7 @@ public class SocketConst {
     public static final int NIO_SELECT_TIMEOUT 	= 500;
     
     /** TCP connect()的超时时间 */
-    public static final int TIMEOUT_TCP_CONNECT 	= 200;
+    public static final int TIMEOUT_TCP_CONNECT 	= 500;
     /** TCP accept()和read()的超时时间 */
     public static final int TIMEOUT_TCP_READ 		= 500;
     /** UDP start()的超时时间 */
@@ -50,11 +50,13 @@ public class SocketConst {
     public static final int TIMEOUT_THREAD_BROADCAST_RECV = 5000;
     /** Future等待超时时间 */
     public static final int TIMEOUT_FUTURE_WAIT = 3000;
+    /** MQTT connect等待超时时间 */
+    public static final int TIMEOUT_MQTTCONN_WAIT = 2000;
     
     /** UDP 最大重新start的次数 */
     public static final int RETRY_TIMES_UDP_START 	= 3;
     /** TCP 最大重连的次数 */
-    public static final int RETRY_TIMES_TCP_CONNECT 	= 2;
+    public static final int RETRY_TIMES_TCP_CONNECT 	= 4;
     /** TCP 最大接收重试的次数（短连接，乘以IO间隔为接收等待时间） */
 //    public static final int BIO_TCP_MAX_RECV_RETRY_TIMES = 10;
     /** UDP 最大重传的次数 */

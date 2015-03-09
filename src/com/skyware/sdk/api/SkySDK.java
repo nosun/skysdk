@@ -208,11 +208,11 @@ public class SkySDK {
 //	}
 
 	/**
-	 * 向设备发送指令
-	 * 
-	 * @param key
-	 * @param cmd
-	 *            指令列表，如 power::0 的字符串格式
+	 *	向设备发送指令
+	 *
+	 *	@param key
+	 *	@param cmd
+	 *	@param sn
 	 */
 	public static void sendCmdToDevice(String key, CmdInfo cmd, int sn) {
 		// TODO CMD_INFO or Json
@@ -220,7 +220,47 @@ public class SkySDK {
 		BizManager.getInstace().sendCmdToDevice(key, cmd, sn);
 	}
 
+	/**
+	 *	登录设备
+	 *
+	 *	@param key
+	 *	@param sn
+	 */
+	public static void doLoginDevice(String key, int sn) {
+		// TODO CMD_INFO or Json
+		BizManager.getInstace().loginDevice(key, sn);
+	}
 	
+	/**
+	 *	查询设备
+	 *
+	 *	@param key
+	 *	@param sn
+	 */
+	public static void checkDeviceStatus(String key, int sn) {
+		// TODO CMD_INFO or Json
+		BizManager.getInstace().checkDeviceStatus(key, sn);
+	}
+	
+	public static class MqttHandler{
+		/**
+		 *	订阅
+		 *
+		 *	@param topic
+		 */
+		public static void subcribe(String topic) {
+			BizManager.getInstace().mqttSubcribe(topic);
+		}
+		
+		/**
+		 *	发布
+		 *
+		 *	@param topic
+		 */
+		public static void publish(String topic, String message) {
+			BizManager.getInstace().mqttPublish(topic, message);
+		}
+	}
 	
 	
 	/**
@@ -346,7 +386,7 @@ public class SkySDK {
 								@Override
 								public void run() {
 									BizManager.getInstace()
-										.checkDeviceStatus(SDKConst.AP_KEY, 0);
+										.checkApStatus(SDKConst.AP_KEY, 0);
 								}
 							}, 0,
 							SDKConst.PROTOCOL_GREEN_CHECK_INTERVAL,
